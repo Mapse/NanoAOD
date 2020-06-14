@@ -1,0 +1,4 @@
+the last test run here before the most recent update was using
+NanoAnalyzer.cc.trigmu5  (Feb 5)
+NanoTrigger.cc.forinclude.Dimu2016a (Dec 9)
+NanoJSON.cc.forinclude.noJSON2 (Sep29)

@@ -1,0 +1,9 @@
+g++ -fPIC -o DAFVertexFinder.so -c vxlite/DAFVertexFinder.cc
+g++ -shared -o libDAFVertexFinder.so DAFVertexFinder.so libtLite.a
+
+g++ -fPIC -o VertexFitter.so -c vxlite/VertexFitter.cc
+g++ -shared -o libVertexFitter.so VertexFitter.so libtLite.a
+
+cp libDAFVertexFinder.so ${CMSSW_BASE}/lib/${SCRAM_ARCH}/
+cp libVertexFitter.so ${CMSSW_BASE}/lib/${SCRAM_ARCH}/
+rm *.so

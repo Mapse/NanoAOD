@@ -1,0 +1,55 @@
+DEBUG 2020-06-12 11:47:49.875 UTC: 	 CRAB Client version: 3.3.2005
+DEBUG 2020-06-12 11:47:49.876 UTC: 	 Running on: Linux lxplus747.cern.ch 3.10.0-1127.8.2.el7.x86_64 #1 SMP Tue May 12 16:57:42 UTC 2020 x86_64 x86_64 x86_64 GNU/Linux - CentOS Linux 7 (Core)
+DEBUG 2020-06-12 11:47:49.891 UTC: 	 OpenSSl version: OpenSSL 1.0.2k-fips  26 Jan 2017 (Library: OpenSSL 1.0.2d-fips 9 Jul 2015)
+DEBUG 2020-06-12 11:47:49.891 UTC: 	 Executing command: 'submit'
+DEBUG 2020-06-12 11:47:49.891 UTC: 	 Found CRAB cache file /afs/cern.ch/user/m/mabarros/.crab3
+INFO 2020-06-12 11:47:49.892 UTC: 	 Will use CRAB configuration file crabDoubleMuon17test_cfg.py
+DEBUG 2020-06-12 11:47:49.892 UTC: 	 Loading CRAB configuration file.
+DEBUG 2020-06-12 11:47:49.893 UTC: 	 Will use CRAB Analysis plugin (i.e. will run an analysis job type).
+ERROR 2020-06-12 11:47:49.893 UTC: 	 Working area '/afs/cern.ch/work/m/mabarros/public/CMSSW_10_6_12/src/NanoAOD/NanoAnalyzer/Data17ULtest/crab_Data17DoubleMuon_MINIAOD' already exists 
+Please change the requestName in the config file
+ERROR 2020-06-12 11:47:49.893 UTC: 	 Caught ClientException exception
+Traceback (most recent call last):
+  File "/cvmfs/cms.cern.ch/share/cms/crab-prod/v3.2005.01/bin/crab", line 165, in <module>
+    client()
+  File "/cvmfs/cms.cern.ch/share/cms/crab-prod/v3.2005.01/bin/crab", line 150, in __call__
+    self.cmd = sub_cmd(self.logger, args[1:])
+  File "/cvmfs/cms.cern.ch/share/cms/crab-prod/v3.2005.01/lib/CRABClient/Commands/submit.py", line 35, in __init__
+    SubCommand.__init__(self, logger, cmdargs, disable_interspersed_args=True)
+  File "/cvmfs/cms.cern.ch/share/cms/crab-prod/v3.2005.01/lib/CRABClient/Commands/SubCommand.py", line 323, in __init__
+    getattr(self.configuration.General, 'requestName', None))
+  File "/cvmfs/cms.cern.ch/share/cms/crab-prod/v3.2005.01/lib/CRABClient/ClientUtilities.py", line 407, in createWorkArea
+    raise ConfigException("Working area '%s' already exists \nPlease change the requestName in the config file" % fullpath)
+ConfigException: Working area '/afs/cern.ch/work/m/mabarros/public/CMSSW_10_6_12/src/NanoAOD/NanoAnalyzer/Data17ULtest/crab_Data17DoubleMuon_MINIAOD' already exists 
+Please change the requestName in the config file
+INFO 2020-06-12 11:47:49.897 UTC: 	 Log file is /afs/cern.ch/work/m/mabarros/public/CMSSW_10_6_12/src/NanoAOD/NanoAnalyzer/crab.log
+DEBUG 2020-06-12 11:51:40.046 UTC: 	 CRAB Client version: 3.3.2005
+DEBUG 2020-06-12 11:51:40.046 UTC: 	 Running on: Linux lxplus747.cern.ch 3.10.0-1127.8.2.el7.x86_64 #1 SMP Tue May 12 16:57:42 UTC 2020 x86_64 x86_64 x86_64 GNU/Linux - CentOS Linux 7 (Core)
+DEBUG 2020-06-12 11:51:40.059 UTC: 	 OpenSSl version: OpenSSL 1.0.2k-fips  26 Jan 2017 (Library: OpenSSL 1.0.2d-fips 9 Jul 2015)
+DEBUG 2020-06-12 11:51:40.059 UTC: 	 Executing command: 'submit'
+DEBUG 2020-06-12 11:51:40.059 UTC: 	 Found CRAB cache file /afs/cern.ch/user/m/mabarros/.crab3
+INFO 2020-06-12 11:51:40.062 UTC: 	 Will use CRAB configuration file crabDoubleMuon17test_cfg.py
+DEBUG 2020-06-12 11:51:40.062 UTC: 	 Loading CRAB configuration file.
+DEBUG 2020-06-12 11:51:40.069 UTC: 	 Will use CRAB Analysis plugin (i.e. will run an analysis job type).
+ERROR 2020-06-12 11:51:40.069 UTC: 	 Working area '/afs/cern.ch/work/m/mabarros/public/CMSSW_10_6_12/src/NanoAOD/NanoAnalyzer/Data17ULtest/crab_Data17DoubleMuonRunE_AOD' already exists 
+Please change the requestName in the config file
+ERROR 2020-06-12 11:51:40.069 UTC: 	 Caught ClientException exception
+Traceback (most recent call last):
+  File "/cvmfs/cms.cern.ch/share/cms/crab-prod/v3.2005.01/bin/crab", line 165, in <module>
+    client()
+  File "/cvmfs/cms.cern.ch/share/cms/crab-prod/v3.2005.01/bin/crab", line 150, in __call__
+    self.cmd = sub_cmd(self.logger, args[1:])
+  File "/cvmfs/cms.cern.ch/share/cms/crab-prod/v3.2005.01/lib/CRABClient/Commands/submit.py", line 35, in __init__
+    SubCommand.__init__(self, logger, cmdargs, disable_interspersed_args=True)
+  File "/cvmfs/cms.cern.ch/share/cms/crab-prod/v3.2005.01/lib/CRABClient/Commands/SubCommand.py", line 323, in __init__
+    getattr(self.configuration.General, 'requestName', None))
+  File "/cvmfs/cms.cern.ch/share/cms/crab-prod/v3.2005.01/lib/CRABClient/ClientUtilities.py", line 407, in createWorkArea
+    raise ConfigException("Working area '%s' already exists \nPlease change the requestName in the config file" % fullpath)
+ConfigException: Working area '/afs/cern.ch/work/m/mabarros/public/CMSSW_10_6_12/src/NanoAOD/NanoAnalyzer/Data17ULtest/crab_Data17DoubleMuonRunE_AOD' already exists 
+Please change the requestName in the config file
+INFO 2020-06-12 11:51:40.072 UTC: 	 Log file is /afs/cern.ch/work/m/mabarros/public/CMSSW_10_6_12/src/NanoAOD/NanoAnalyzer/crab.log
+DEBUG 2020-06-14 16:28:33.184 UTC: 	 CRAB Client version: 3.3.2005
+DEBUG 2020-06-14 16:28:33.184 UTC: 	 Running on: Linux lxplus778.cern.ch 3.10.0-1127.8.2.el7.x86_64 #1 SMP Tue May 12 16:57:42 UTC 2020 x86_64 x86_64 x86_64 GNU/Linux - CentOS Linux 7 (Core)
+DEBUG 2020-06-14 16:28:33.197 UTC: 	 OpenSSl version: OpenSSL 1.0.2k-fips  26 Jan 2017 (Library: OpenSSL 1.0.2d-fips 9 Jul 2015)
+DEBUG 2020-06-14 16:28:33.198 UTC: 	 Executing command: 'status'
+DEBUG 2020-06-14 16:28:33.198 UTC: 	 Found CRAB cache file /afs/cern.ch/user/m/mabarros/.crab3
