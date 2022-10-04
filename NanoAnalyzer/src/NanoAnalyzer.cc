@@ -3,28 +3,60 @@
 // for the creation of Run 1 nanoAOD-like ntuple from AOD or RECO input  //
 // and corresp. Run 2 reference/validation ntuples from AOD or miniAOD   //
 // **********************************************************************//
-//
-// Choose appropriate CMSSW flag (only one of the three should be set):
-// keyword of H->4lepton electron implementation: // H4lepton
 
-// Main application is Run 1 legacy CMSSW53X (e.g. 2011/2, 5_3_32)
-//#define CMSSW53X
-// Define here instead in case CMSSW version is CMSSW42X (e.g. 2010, 4_2_8)
-//#define CMSSW42X
-// Define here instead in case CMSSW version is for Run 2, CMSSW7 or higher
-// (e.g. 2015-18), for validation purposes
-//#define CMSSW7plus
+// ****************************************************
+// for implementation history, see testnanoreadme.txt *
+// ****************************************************
+// Direct contributors:  A. Anuar, A. Bermudez, A. Geiser (coordinator), 
+// N.Z. Jomhari, S. Wunsch, Q. Wang, H. Yang, Y. Yang, 2018-2021. 
 
-// afiqaize try to automate the above; CMSSW is tied to particular compiler versions
-// 42X taken from 4_2_8, 53X from 5_3_32, 7XX from 7_6_1
+// ******************************************
+// automatically set appropriate CMSSW flag *
+// ******************************************
+// recognize automatically (no user action needed): 
+// CMSSW is tied to particular compiler versions
+// 42X taken from 4_2_8, 53X from 5_3_32, 7XX from 7_6_4
 #define GCC_VERSION ( 10000 * __GNUC__ + 100 * __GNUC_MINOR__ + __GNUC_PATCHLEVEL__ )
 #if GCC_VERSION < 40305
+// Early Run 1 legacy CMSSW42X (e.g. 2010, 4_2_8)
 #define CMSSW42X
 #elif GCC_VERSION < 40703
+// Main application is Run 1 legacy CMSSW53X (e.g. 2011/2, 5_3_32)
 #define CMSSW53X
 #elif GCC_VERSION > 40902
+// instead in case CMSSW version is for Run 2, CMSSW7 or higher
+// (e.g. 2015-18), for validation purposes
 #define CMSSW7plus
+#if GCC_VERSION < 50000
+// for CMSSW 7_6_X  (GCC_VERSION might need to be changed/sharpened)
+// (not clear whether this logic will still work for CMSSW 8 and 9)
+#define CMSSW7XX
 #endif
+#endif
+// for ultra-legacy AOD (10_6_4 or higher)
+#if GCC_VERSION > 70400
+// this one comes on top of the previous
+#define CMSSW106plus
+#endif
+#if GCC_VERSION > 80300
+// for Run 3 studies
+// this one comes on top of the previous
+// GCC_VERSION preliminary, might need to be changed/sharpened
+#define CMSSW11plus
+#endif
+
+// ********************************************************************
+// the following are flags which can be (de)activated manually
+// defaults are set such that for normal use no manual action is needed
+// ********************************************************************
+
+// activate this to achieve maximum compatibility with official Run 2 nanoAOD
+// (default is off -> better performance, e.g. use of beam spot constraint)
+// (mainly for Run 2 validation - not recommended for Run 1)
+// only relevant for Run 2 AOD, turn on for better consistency with miniAOD 
+//                        (slightly worse performance)
+// nanoext flag can also be steered/overruled via configuration file
+//#define Compatibility
 
 // activation flag to check and store compatibility with Golden JSON 
 // default is on for 2010 data (not MC, automatic), off otherwise
@@ -32,68 +64,47 @@
 #define JSONcheck
 #endif
 
-// the following are flags which can be activated manually
+#ifdef CMSSW42X
+// activate this to check 2010 Golden JSON setting, i.e. abort upon nonJSON event
+// activate this only when Golden JSON is activated in configuration
+// (protection against accidental use of wrong or no JSON in configuration,
+//  for check and validation, not strictly needed)
+#define JSONcheckabort
+#endif
 
-// activate this to check Golden JSON setting, i.e. abort upon nonJSON event
-// activate this only for check when Golden JSON is activated in configuration
-// (protection against accidental use of wrong or no JSON in configuration)
-//#define JSONcheckabort
-
-// activate this only for data sets for which trigger treatment is already 
-// implemented; checks and aborts in case of inconsistency
+// activate this only for data sets for which "plus" part of trigger treatment 
+// is already implemented; checks and aborts in case of inconsistency;
 // should be activated by default if trigger is implemented for dataset
 // (protection against inconsistencies in NanoTrigger implementation)
 //#define trigcheckabort
 
-// activate this to achieve maximum compatibility with official Run 2 nanoAOD
-// (default is off -> better performance, e.g. use of beam spot constraint)
-// (mainly for Run 2 validation - not recommended for Run 1)
-// only relevant for Run 2 AOD, turn on for better consistency with miniAOD 
-//                        (worse performance)
-// nanoext flag can also be steered/overruled via configuration file
-//#define Compatibility
-
-// activate this when you read from miniAOD (Run 2 only!)
+#ifdef CMSSW7plus
+// activate this when you read from miniAOD for validation (Run 2/3 only!)
 //#define miniAOD
+#endif
 
-// turn this on only when using old 'Demo' version nanoAnalyzer setup on VM
-//#define Demo
-// turn this on to activate D meson true info printout on MC
-//#define Bingo
+#ifdef miniAOD
+// activate this when packedPFcandidate covariance matrix is also provided 
+// without track details
+// (Run 2/3 only, needs update of PatCandidates.h and Lookup tables)
+//#define covwithoutdetails 
+#endif
 
-// 18.2.2019,  Nur Zulaiha Jomhari, Achim Geiser  
+// turn this on to deactivate code related to jet corrections
+//  (e.g. in case of problems with the configuration, and only if you do 
+//   *not* use jets in your analysis)
+//  default should be flag off
+#define noJetCor 
 
-// The following comment lines are out of date and need update
-//
-// version 0.0:
-//
-// run, event, luminosityBlock fully implemented
-//
-// almost all Muon nanoAOD variables implemented, 
-// most cross-checked against nanoAODv2
-//    + extension to looser muon selection and more variables
-//    "Muon_isNano" flag selects official nanoAOD muons only 
-//
-// most PV nanoAOD variables implemented
-// and cross-checked againts nanoAODv2 (w/o BS option)
-//
-// OtherPV variables implemented but content not yet validated
-//    + extension to list of all primary vertices with extra variables
-//     
-// partial implementation of variables for electron, photon, tau, MET, JET
-// electron variables partially validated, others not yet
-//
-// implementation of GenPart variables, but not yet validated
-//    (so far c,b, muons and D mesons only)
-//
-//    extension to D0 mesons (in SV format) and D* mesons
-//    extension to trigger information in nonstandard format
-//    
-// code for different CMSSW versions is steered by #ifdef flags
-// some external non-CMSSW code is also still being used 
-//    -> will be removed or integrated 
+// turn this on to activate code related to charm final states
+#define charm
 
-// keyword: nuha
+#ifdef charm
+// turn this on to activate D meson cuts optimized for large rapidities
+// default (on) is for new looser cuts
+#define beauty
+#endif
+
 // system include files
 #include <memory>
 #include <iostream>
@@ -112,7 +123,9 @@ using boost::unordered_map;
 using std::unordered_map;
 #endif
 
-// general user include files
+//*****************************
+// general user include files *
+//*****************************
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/Framework/interface/EDAnalyzer.h"
 #include "FWCore/Framework/interface/Event.h"
@@ -134,10 +147,14 @@ using std::unordered_map;
 #include "DataFormats/Common/interface/ValueMap.h"
 #include "DataFormats/Common/interface/View.h"
 #include "DataFormats/Provenance/interface/EventAuxiliary.h"
-// Afiq, to get release version
+// to get release version
 #include "FWCore/Version/interface/GetReleaseVersion.h"
-// nuha: header for conversion tools
+// header for conversion tools
+#ifndef CMSSW11plus
 #include "RecoEgamma/EgammaTools/interface/ConversionTools.h"
+#else
+#include "CommonTools/Egamma/interface/ConversionTools.h"
+#endif
 // effective area for rho
 //https://github.com/cms-sw/cmssw/blob/CMSSW_9_4_X/RecoEgamma/EgammaTools/interface/EffectiveAreas.h
 //#include "RecoEgamma/EgammaTools/interface/EffectiveAreas.h"
@@ -147,30 +164,38 @@ using std::unordered_map;
 #include "TFile.h"
 #include "Math/VectorUtil.h"
 
-// for histogramming
-#include "TH1.h"
-#include "TH2.h"
-#include "TH3.h"
-#include "TStyle.h"
+// for ntuple output
 #include "TLorentzVector.h"
 #include "TTree.h"
 
-// for trigger information
+#ifdef charm
+// for control histograms
+#include "TH1.h"
+#include "TH2.h"
+#endif
+
+//**************************
+// for trigger information *
+//**************************
 #include "FWCore/Common/interface/TriggerNames.h"
 // not needed?
 //#include "FWCore/Common/interface/TriggerResultsByName.h"
 #include "DataFormats/Common/interface/TriggerResults.h"
-// Afiq
+// for automatic trigger recognition
 #include "HLTrigger/HLTcore/interface/HLTConfigProvider.h"
-#include "DataFormats/HLTReco/interface/TriggerEvent.h"  //Qun 17-10-19 TriggerObj
-#include "HLTrigger/HLTcore/interface/HLTConfigProvider.h" //Qun 17-10-19 TriggerObj
-#include <cassert>  //Qun
+// for trigger objects
+#include "DataFormats/HLTReco/interface/TriggerEvent.h"
+#include <cassert> 
+#include "FWCore/ParameterSet/interface/ConfigurationDescriptions.h"
+#include "HLTrigger/HLTcore/interface/HLTEventAnalyzerAOD.h"
+#ifndef CMSSW11plus
+// no longer exists in CMSSW_11_2_X, not needed??
+#include "HLTrigger/HLTcore/interface/TriggerSummaryAnalyzerAOD.h"
+#endif
 
-#include "FWCore/ParameterSet/interface/ConfigurationDescriptions.h" //Qun
-#include "HLTrigger/HLTcore/interface/HLTEventAnalyzerAOD.h" //Qun
-#include "HLTrigger/HLTcore/interface/TriggerSummaryAnalyzerAOD.h"//Qun
-
-// for tracking information
+//***************************
+// for tracking information *
+//***************************
 #include "DataFormats/TrackReco/interface/Track.h"
 #include "DataFormats/TrackReco/interface/TrackFwd.h"
 #include "DataFormats/TrackReco/interface/HitPattern.h"
@@ -182,31 +207,20 @@ using std::unordered_map;
 #include "DataFormats/PatCandidates/interface/PackedCandidate.h"
 // there are three track collections in miniAOD (in addition to the muon 
 // and electron collections), embedded into particleflow objects:
-//   *** update this ***
-// packedPFCandidates allows to rebuild tracks (for pt>0.95/0.4 GeV) using
+// packedPFCandidates allows to rebuild tracks (for pt>0.5 GeV) using
 //                    pseudotrack() (object) or besttrack() (pointer)
 // PackedPFCandidatesDiscarded presumably contains only discarded duplicate 
 //                    muon candidates -> do not use
-// lostTracks (high purity only) might contain many of the non-vertex tracks 
-//                    needed for the slow pion measurement 
+// lostTracks (high purity only) contains some of the non-vertex tracks 
 #endif
 
-
-
 /// for track parametrization 
-//#include "TrackingTools/TrajectoryParametrization/interface/CartesianTrajectoryError.h" 
 #include "TrackingTools/TrajectoryParametrization/interface/GlobalTrajectoryParameters.h"
-//#include "DataFormats/GeometryVector/interface/GlobalVector.h"
-//#include "MagneticField/Engine/interface/MagneticField.h"
-//#include "FWCore/Utilities/interface/Likely.h"
-//#include "DataFormats/Math/interface/AlgebraicROOTObjects.h"
-//#include "DataFormats/GeometrySurface/interface/Surface.h"
-//#include "TrackingTools/TrajectoryParametrization/interface/LocalTrajectoryParameters.h"
 #include "TrackingTools/TrajectoryParametrization/interface/PerigeeTrajectoryParameters.h"
-// commented for 10_X
-//#include "RecoVZero/VZeroFinding/interface/VZeroFinder.h"
 
-// for vertex information 
+//*************************
+// for vertex information *
+//*************************
 // reconstructed primary is typically within 0.02 cm of true primary in z
 #include "DataFormats/VertexReco/interface/Vertex.h"
 #include "DataFormats/VertexReco/interface/VertexFwd.h"
@@ -232,40 +246,24 @@ using std::unordered_map;
 // beam-spot constrained vertices: x~0.001 , y~0.001 , z~0.004 cm) 
 #include "DataFormats/BeamSpot/interface/BeamSpot.h"
 
-// for error matrix handling
-#ifdef Demo  
-#include "Demo/DemoAnalyzer/src/inverceM.h"
-#endif
-#ifndef Demo  
-#include "NanoAOD/NanoAnalyzer/src/inverceM.h"
-#endif
+//****************************
+// for error matrix handling *
+//****************************
 #include "TMatrixT.h"
 #include "Math/SMatrix.h"
 #include "Math/StaticCheck.h"
 //#include <MatrixRepresentationsStatic.h>
 #include "Math/Expression.h"
 
-/* #ifdef Demo
-// for 'ZEUS-type' revertexing (needs external code/library)
-// #include "Demo/DemoAnalyzer/interface/vxlite/VertexFitter.cc"
-#include "Demo/DemoAnalyzer/interface/vxlite/LinearizedTrack.hh"
-#include "Demo/DemoAnalyzer/interface/vxlite/VertexFitter.hh"
-// #include "Demo/DemoAnalyzer/interface/vxlite/DAFVertexFinder.cc"
-#include "Demo/DemoAnalyzer/interface/vxlite/DAFVertexFinder.hh"
-#include "Demo/DemoAnalyzer/include/HelixTransClass.h"
-#endif */
-//#ifndef Demo
-// for 'ZEUS-type' revertexing (needs external code/library)
-// #include "Demo/DemoAnalyzer/interface/vxlite/VertexFitter.cc"
-#include "NanoAOD/NanoAnalyzer/interface/vxlite/LinearizedTrack.hh"
-#include "NanoAOD/NanoAnalyzer/interface/vxlite/VertexFitter.hh"
-// #include "Demo/DemoAnalyzer/interface/vxlite/DAFVertexFinder.cc"
-#include "NanoAOD/NanoAnalyzer/interface/vxlite/DAFVertexFinder.hh"
-#include "NanoAOD/NanoAnalyzer/include/HelixTransClass.h"
-//  #endif
+// set namespaces
+   using namespace edm;
+   using namespace reco;
+   using namespace std;
 
+//***********************
+// for muon information *
+//***********************
 #ifndef miniAOD
-// for muon information
 #include "DataFormats/MuonReco/interface/Muon.h"
 #include "DataFormats/MuonReco/interface/MuonFwd.h"
 #include "DataFormats/MuonReco/interface/MuonSelectors.h"
@@ -279,7 +277,9 @@ using std::unordered_map;
 #include "DataFormats/PatCandidates/interface/Muon.h"
 #endif
 
-// for electron informaton
+//***************************
+// for electron information *
+//***************************
 #ifndef miniAOD
 #include "DataFormats/EgammaCandidates/interface/GsfElectron.h"
 #include "DataFormats/EgammaCandidates/interface/GsfElectronFwd.h"
@@ -307,7 +307,9 @@ using std::unordered_map;
 #include "DataFormats/PatCandidates/interface/Tau.h"
 #endif
 
-// for MET informaton
+//**********************
+// for MET information *
+//**********************
 #ifndef miniAOD
 #include "DataFormats/METReco/interface/PFMET.h"
 #include "DataFormats/METReco/interface/PFMETFwd.h"
@@ -322,7 +324,9 @@ using std::unordered_map;
 #include "DataFormats/PatCandidates/interface/MET.h"
 #endif 
 
-// for jet information
+//**********************
+// for jet information *
+//**********************
 #include "DataFormats/Common/interface/Handle.h"
 #include "DataFormats/Math/interface/deltaR.h"
 #ifndef miniAOD
@@ -334,29 +338,36 @@ using std::unordered_map;
 #include "DataFormats/JetReco/interface/GenJetCollection.h"
 #include "DataFormats/JetReco/interface/JetExtendedAssociation.h"
 #include "DataFormats/JetReco/interface/JetID.h"
+#include "JetMETCorrections/Objects/interface/JetCorrector.h"
+//#include "CondFormats/JetMETObjects/interface/JetCorrectorParameters.h"
+//#include "JetMETCorrections/Objects/interface/JetCorrectionsRecord.h"
 #endif
 #ifdef miniAOD
 #include "DataFormats/PatCandidates/interface/Jet.h"
 #endif
 
-// for gen particle information
+//*******************************
+// for gen particle information *
+//*******************************
 #include "SimDataFormats/GeneratorProducts/interface/HepMCProduct.h"
 #include "SimDataFormats/GeneratorProducts/interface/GenEventInfoProduct.h"
 #include "SimDataFormats/PileupSummaryInfo/interface/PileupSummaryInfo.h"
 #include "DataFormats/HepMCCandidate/interface/GenParticleFwd.h"
 #include "DataFormats/HepMCCandidate/interface/GenParticle.h"
 
-// for particle flow information
+//********************************
+// for particle flow information *
+//********************************
 #include "DataFormats/ParticleFlowCandidate/interface/PFCandidate.h"
 #include "DataFormats/ParticleFlowCandidate/interface/PFCandidateFwd.h"
 
-// using namespace edm;
+//***************************
+// class member declaration *
+//***************************
 
-// class member declaration
-
-// Qun
-//#pragma link C++ class std::vector<float> +; 
-//#pragma link C++ class std::vector<double> +; 
+//***********************************
+// main analyzer class (EDAnalyzer) *
+//***********************************
 
 class NanoAnalyzer : public edm::EDAnalyzer
 {
@@ -366,106 +377,10 @@ public:
 
   static void fillDescriptions(edm::ConfigurationDescriptions & descriptions);
 
-//      virtual void beginRun(edm::Run const&, edm::EventSetup const&); //Qun
-
-  // this is the place to define global variables parameters 
+  // this is the place to define global variables and parameters 
 
         // declare global trigger variables
-
-        // The dataset flags indicate the current knowledge about the whole 
-        // current dataset. This should become unique after a few events.
-        // The `Trig' flags indicate which datasets the current event may 
-        // belong to (since an event can have fired triggers from several 
-        // datasets, this is often not unique).
-        // The other variables indicate thresholds for certain classes of 
-        // triggers, which may span several datasets.
-
-        // bit for generic "Good" JSON 
-        bool GoodLumisection;
-
-        // bits for generic "Good" triggers 
-        bool GoodMinBiasTrigger;
-        bool GoodJetTrigger;
-        bool GoodMuTrigger;
-        bool GoodETrigger;
-
-        // bits for datasets
-        bool MCdataset;
-        bool ZeroBiasdataset;
-        bool MinimumBiasdataset;
-        bool Commissioningdataset;
-        bool Mudataset;
-        bool MuHaddataset;
-        bool DoubleMudataset;
-        bool MuOniadataset;
-        bool Charmoniumdataset;
-        bool MuMonitordataset;
-        bool Jetdataset;
-        bool MultiJetdataset;
-        bool JetMETTauMonitordataset;
-        bool BTaudataset;
-        bool BParkingdataset;
-        bool MuEGdataset;
-        bool Electrondataset;
-        bool DoubleElectrondataset;
-        bool Photondataset;
-        bool EGMonitordataset;
-        bool METFwddataset;
-        bool datasetisunique;
-        std::string dataset;
-
-        // bits and variables for MinimumBias and Commissioning datasets
-        bool ZeroBiasTrig; 
-        bool MinimumBiasTrig;
-        bool CommissioningTrig;
-        bool GoodMinimumBiasTrig;
-        bool GoodMuMinimumBiasTrig;
-        int MinBiasFlag;
-        int MinBiasMult;
-        int ZeroBiasFlag;
-
-        // bits and variables for various Muon, Electron and Photon datasets
-        bool MuTrig;
-        bool MuHadTrig;
-        bool DoubleMuTrig;
-        bool MuEGTrig;
-        bool ElectronTrig;
-        bool DoubleElectronTrig;
-        bool PhotonTrig;
-        bool MuOniaTrig;
-        bool CharmoniumTrig;
-        bool MuMonitorTrig;
-        bool EGMonitorTrig;
-        bool GoodMuTrig;
-        bool GoodETrig;
-        int MuThresh; 
-        int MuL1Thresh; 
-        int MuL2Thresh; 
-        int IsoMuThresh; 
-        int DoubleMuThresh; 
-        int JpsiThresh;
-        int MuHadFlag;
-        int MuEGFlag;
-        int ElectronThresh;
-        int DoubleElectronThresh;
-        int PhotonThresh;
-
-        // bits and variables for various Jet and MET datasets 
-        bool JetTrig;
-        bool MultiJetTrig;
-        bool JetMETTauMonitorTrig;
-        bool BTauTrig;
-        bool BParkingTrig;
-        bool METFwdTrig;
-        bool GoodJetTrig;
-        int JetThresh; 
-        int DiJetThresh;
-        int TriJetThresh;
-        int QuadJetThresh;
-        int HTThresh;
-        int BThresh;
-      
-        int METThresh; 
+#include "NanoTrigger.h"
 
 private:
 
@@ -473,27 +388,31 @@ private:
 
   virtual void beginRun(const edm::Run &iRun, const edm::EventSetup &iStp);
   virtual void analyze(const edm::Event&, const edm::EventSetup&);
-  virtual void analyzeTrigger(const edm::Event&, const edm::EventSetup&, const std::string& triggerName); //Qun
-  virtual void endRun(edm::Run const&, edm::EventSetup const&);  //Qun
+  virtual void analyzeTrigger(const edm::Event&, const edm::EventSetup&, const std::string& triggerName);
+  virtual void endRun(edm::Run const&, edm::EventSetup const&);
 
   virtual void endJob();
   
-  // declare JSON quality method (code included via #include)
+  // declare optional JSON quality method (code included via #include)
   bool providesGoodLumisection(const edm::Event& iEvent);
 
-  // declare trigger methods (code included via #include)
+  // declare optional trigger methods (code included via #include)
   bool providesGoodMinBiasTrigger(const edm::Event& iEvent);
   bool providesGoodMuTrigger(const edm::Event& iEvent);
   bool providesGoodETrigger(const edm::Event& iEvent);
   bool providesGoodJetTrigger(const edm::Event& iEvent);
   HLTConfigProvider hltConfig_;  //Qun 17-10-19 TriggerObj
 
-  // afiqaize string manipulation methods
+  // string manipulation methods
   static bool is_non_digit(const char &c) { return !std::isdigit(c); };
   static std::string remove_version(const std::string &path) { return path.substr(0, path.rfind("_v")); };
 
   // as it says on the tin
   void update_HLT_branch();
+
+  // branch title creation 
+  void eventDoc();
+  void createTitle(const std::string &name, const std::string &title); 
 
   // HLT config for reading the table and its associated process name
   //HLTConfigProvider hlt_cfg;   // superseded above
@@ -521,6 +440,9 @@ private:
   // not yet needed
   // EDGetTokenT< std::vector<reco::CaloMET> > muCorrmetTkn;
   EDGetTokenT<reco::PFJetCollection> pfjetTkn;
+  EDGetTokenT<reco::PFJetCollection> pffatjetTkn;
+  EDGetTokenT<reco::GenJetCollection>  genjetTkn;//Qun
+  EDGetTokenT<reco::TrackJetCollection> trackjetTkn;
   EDGetTokenT<edm::TriggerResults> trigTkn;
   // for Trigger and Flags (Afiq) *** need to sort out duplication ***
   EDGetTokenT<edm::TriggerResults> trig_tkn;
@@ -548,7 +470,14 @@ private:
   EDGetTokenT<pat::METCollection> pfmetTkn;
   EDGetTokenT<pat::METCollection> calometTkn;
   EDGetTokenT<pat::JetCollection> pfjetTkn;
+  EDGetTokenT<reco::GenJetCollection> genjetTkn;//Qun
+  EDGetTokenT<pat::JetCollection> pffatjetTkn;
+  // does not exist 
+  //EDGetTokenT<pat::TrackJetCollection> trackjetTkn;
   EDGetTokenT<edm::TriggerResults> trigTkn;
+  // need to sort out duplication
+  EDGetTokenT<edm::TriggerResults> trig_tkn;
+  EDGetTokenT<edm::TriggerResults> custom_tkn;
   EDGetTokenT<trigger::TriggerEvent> trigEvn; //Qun 
 #endif
 #endif
@@ -562,30 +491,25 @@ private:
 
   // member data
   std::string outFile;
-  bool isData;
-  int CMSSW;
+  bool isData;  // whether data or MC
+  int CMSSW;    // CMSSW version
   bool nanoext; // write out nanoAOD extensions
-  bool covout; // whether to write or not covariance matrices in nanoAOD extensions
-  //bool relative_;
+  bool covout;  // whether to write or not covariance matrices in nanoAOD extensions
   
-  // H4lepton
-  int misshits;
-  double IP3d_e;
-  double ErrIP3d_e;
-  double SIP3d_e;  
-  double relPFIso_e;
-
-//////////////////////////////////////////////////////////////////////////////
-////////////////////////// declare tree, file, hist //////////////////////////
-//////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+////////////////////////// declare tree, file, //////////////////////////
+/////////////////////////////////////////////////////////////////////////
   
   TFile *file;
   TTree *t_event;
 
-  /// define histograms ///
-  TH1D *h_trackpt;
+#ifdef charm
+  /// define tracking and D meson histograms (for debug/validation) ///
+  /* TH1D *h_trackpt;
   TH1D *h_trackptlow;
+  TH1D *h_trackptlowfine;
   TH1D *h_tracketa;
+  TH1D *h_trackcov00;
   
   TH1D *h_d0pt;
   TH1D *h_dstarpt;
@@ -598,27 +522,15 @@ private:
   TH1D *h_D0masscut;
   TH1D *h_deltaMassD0Dstar;
   TH1D *h_D0masscut_rightDLcut;
-  TH1D *h_deltaMassD0Dstar_rightDLcut;
+  TH1D *h_deltaMassD0Dstar_rightDLcut; */
+#endif
 
-  // H4lepton
-  // histograms for some electron vars before pt cut
-  // to compare with H-4l example
-  TH1D *h_p_e;
-  TH1D *h_et_e;
-  TH1D *h_pt_e_b4;
-  TH1D *h_eta_e_b4;
-  TH1D *h_phi_e;
-  TH1D *h_sc_eta;
-  TH1D *h_sc_rawE;
-  TH1D *h_relPFIso_e;
-  TH2D *h_relPFIso_pt_e;
-  TH1D *h_dxy_e;
-  TH1D *h_SIP3d_e_b4;
-  TH1D *h_misshite;  
-  
 //////////////////////////////////////////////////////////////////////////////
 ///////////////// declare variables you want to put into the tree ////////////
 //////////////////////////////////////////////////////////////////////////////
+// local for the moment
+// to be declared global if analyzer split into semiindependent parts
+
 
 ////////////////////////////////// for general ///////////////////////////////
 
@@ -627,50 +539,9 @@ private:
   ULong64_t event;
   UInt_t luminosityBlock;
 
-  /// nanoAOD extension ///
+  /// special nanoAOD extension ///
+  // (see global part, NanoTrigger.h)
 
-  // The following is a historical intention and not (yet) used
-  Int_t dataIsInclusive;
-  Int_t dataIsHighPtJet;
-  Int_t dataIsMuonLow;
-  Int_t dataIsMuonHigh;
-  Int_t dataIsDimuonLow;
-  Int_t dataIsDimuonHigh;
-  Int_t dataIsElectronLow;
-  Int_t dataIsElectronHigh;
-  Int_t dataIsDiElectronLow;
-  Int_t dataIsDiElectronHigh;
-  Int_t dataIsMuELow;  
-  Int_t dataIsMuEHigh;
-  // useful dataset chains are
-  //   inclusive chain:            ZeroBias -> MinimumBias -> HT -> JetMon 
-  //                            -> Jet -> JetHT -> MultiJet -> HTMHTParked
-  //   high pt jet chain:          Jet -> JetHT -> MultiJet
-  //   low pt single muon chain:   ZeroBias -> MinimumBias -> MuMonitor -> Mu 
-  //                            -> SingleMu -> MuHad -> MuEG
-  //   high pt single muon chain:  Mu -> SingleMu -> MuHad -> MuEG
-  //   low pt double muon chain:   ZeroBias -> MinimumBias -> MuMonitor -> Mu 
-  //                            -> SingleMu -> DoubleMu(Parked) -> MuHad 
-  //                            -> MuOnia(Parked) -> Scouting 
-  //   high pt double muon chain:  Mu -> SingleMu -> DoubleMu(Parked) -> MuHad
-  //   low pt single electron chain: ZeroBias -> MinimumBias -> EGmonitor 
-  //                            -> Electron -> SingleElectron -> ElectronHad 
-  //                            -> Photon -> PhotonHad -> MuEG
-  //   high pt single isolated electron chain: Electron -> SingleElectron 
-  //                            -> ElectronHad -> MuEG
-  //   low pt double electron chain: ZeroBias -> MinumumBias -> EGmonitor 
-  //                            -> Electron -> SingleElectron -> DoubleElectron
-  //                            -> ElectronHad -> Photon -> SinglePhoton 
-  //                            -> DoublePhoton -> DoublePhotonHighPt 
-  //                            -> PhotonHad 
-  //   high pt isolated double electron chain: Electron -> SingleElectron 
-  //                            -> DoubleElectron -> ElectronHad  
-  //   low/high pt muon-electron chain: "Or" of single muon and single electron
-  //                                    chains  (low or high pt) 
-  //   Others 2010:      Commissioning, JetMETTaumonitor, BTau, METFwd 
-  //   Others 2011:      TauPlusX, BTag, MET, METBTag, Tau 
-  //   Others 2012:      Commissioning, MET, BTag, MTMHTParked, HcalNZS, 
-  //                     NoBPTX, TauParked, HCalNZS, BJetPlusX, VBF1Parked  
 
 ////////////////////////////// for Gen particle //////////////////////////////
 
@@ -681,13 +552,13 @@ private:
   vector<Float_t> GenPart_eta;
   vector<Float_t> GenPart_phi;
   vector<Float_t> GenPart_mass;
+  vector<Float_t> GenPart_charge;
   vector<Int_t> GenPart_pdgId;
   vector<Int_t> GenPart_status;
   vector<Int_t> GenPart_statusFlags;
   vector<Int_t> GenPart_genPartIdxMother; 
 
-  /// nanoAOD extension ///
-  // later, store the above for all(?) GenParticles //
+  /// general nanoAOD extension ///
   vector<Int_t> GenPart_Id;
   vector<uint8_t> GenPart_isNano;  // satisfies criteria for nanoAOD shortlist 
                                    // (Bool on ntuple)
@@ -697,20 +568,38 @@ private:
                                    // number of daughter particles in decay
   vector<Int_t> GenPart_nstchgdaug; 
                     // number of stable charged daughter particles in decay
-  vector<Float_t> GenPart_vx;
-  vector<Float_t> GenPart_vy;
+  vector<Float_t> GenPart_vx;      // particle origin vertex
+  vector<Float_t> GenPart_vy;      // (agrees with GenPV if prompt)
   vector<Float_t> GenPart_vz;
-  vector<Float_t> GenPart_mvx;
-  vector<Float_t> GenPart_mvy;
+  vector<Float_t> GenPart_mvx;     // mother origin vertex
+  vector<Float_t> GenPart_mvy;     // (agrees with GenPV of prompt)
   vector<Float_t> GenPart_mvz;
-  vector<Int_t> GenPart_recIdx;
+  vector<Int_t> GenPart_recIdx;    // pointer to rec track list if matched
 
-  // main generated vertex, to be filled from suitably chosen GenPart_vtx
-  Float_t GenPV_x;
+  // for decay and mother vertices from GenPart
+  float dcyvtxx, dcyvtxy, dcyvtxz;
+  float motx, moty, motz;
+
+  // main generated vertex, filled from suitably chosen GenPart_vtx
+  Float_t GenPV_x;                 // position
   Float_t GenPV_y;
   Float_t GenPV_z;
-  Int_t GenPV_recIdx;  
-  Int_t GenPV_chmult;  
+  Int_t GenPV_recIdx;              // pointer to rec vertex list if matched 
+  Int_t GenPV_chmult;              // charged multiplicity
+  //Josry prompt/nonprompt Dstar/D0 Flag
+  vector<Int_t> GenPart_promptFlag;
+
+  /////////////////////////// for trigger objects ////////////////////////////
+
+  // Trigger Object
+  UInt_t nTrigObj;                   // number of stored Trigger Obj
+  vector<Int_t> TrigObj_id;          // ID of the object
+  vector<Int_t> TrigObj_filterBits;  // filter bits - *** still to be implemented ***
+  vector<Float_t> TrigObj_pt;        // pt
+  vector<Float_t> TrigObj_phi;        // phi
+  vector<Float_t> TrigObj_eta;        // eta
+
+
 
 ////////////////////////////// for track variables ///////////////////////////
    
@@ -729,7 +618,7 @@ private:
   vector<Float_t> IsoTrack_phi;
   vector<Float_t> IsoTrack_pt;
 
-  /// nanoAOD extension ///  
+  /// nonstandard nanoAOD extension ///  
   UInt_t nTrk;               // number of tracks in event
   // *** from here not yet filled, not yet written out ***
   vector<Int_t> Trk_Id;      // unique track identifier
@@ -751,7 +640,7 @@ private:
   // Add here some track quality variables //
 
 
-////////////////////////////// for vertex variables ///////////////////////// 
+////////////////////////////// for vertex and beam spot variables ///////////////////////// 
 
   /// official nanoAOD ///
   Int_t   PV_npvs;           // number of reconstructed primary vertices
@@ -791,7 +680,8 @@ private:
          // pileup contribution to energies, ...) neither of the two previous 
          // flags will be set for these vertices
   vector<Int_t> PVtx_ntrk;   // number of tracks associated to this primary 
-         // vertex (including secondaries from this primary) *** to be impl. ***
+         // vertex (including secondaries from this primary)
+         // will be filled in NanoDmeson! 
   vector<Int_t> PVtx_ntrkfit;// number of tracks fitted to this primary vertex
   vector<Float_t> PVtx_chi2;   // primary vertex chi2
   vector<Float_t> PVtx_ndof;   // primary vertex number of degrees of freedom
@@ -824,8 +714,6 @@ private:
   
 ////////////////////////////// for Muon variables ////////////////////////////
 
-  // variables // *   are not yet filled properly
-  
   UInt_t b4_nMuon;  // all muon counter;  (b4 = before selection)
   UInt_t Muon_nNano; // counter for official nanoAOD muons
 
@@ -833,10 +721,9 @@ private:
 
   UInt_t nMuon;                   // number of stored muons
   vector<Int_t> Muon_charge;      // muon charge
-  vector<Int_t> Muon_tightCharge; // *
+  vector<Int_t> Muon_tightCharge; // muon tight charge
   // for the following, take the parameters from global track if available, 
   // from tracker or muon track otherwise 
-  // *** or take from vertex? no ->revertex? ***
   // seems to be always taken from inner track if available
   vector<Float_t> Muon_pt;        // muon transverse momentum (in GeV)
   vector<Float_t> Muon_ptErr;     // muon transverse momentum error
@@ -855,6 +742,7 @@ private:
   vector<Float_t> Muon_pfRelIso03_all;   // PF isolation in cone 0.3
   vector<Float_t> Muon_pfRelIso03_chg;   // PF track isolation in cone 0.3
   vector<Float_t> Muon_pfRelIso04_all;   // PF isolation in cone 0.4
+  vector<Int_t>   Muon_pfIsoId;          // PF isolation flag, (*** not yet ***) pileup corrected
   vector<Float_t> Muon_miniPFRelIso_all; // *
   vector<Float_t> Muon_miniPFRelIso_chg; // *
   vector<Int_t> Muon_jetIdx;   // *
@@ -919,53 +807,13 @@ private:
   // clarify overlap with Muon_genPartIdx
   vector<Int_t> Muon_simIdx;   // index (GenPart_Id) of particle in GenPart
     
-  // store dimuon candidates 
-  //------------------------------ For Dimu branches ------------------------//
-  UInt_t nDimu;  
-  // mu 1 from Dimu
-  vector<Int_t> Dimut1_muIdx;    // pointer to first muon
-  vector<Float_t> Dimut1_dxy;    // dxy of first muon w.r.t. allocated vertex
-  vector<Float_t> Dimut1_dz;     // dz of first muon w.r.t. allocated vertex
+  // for dimuon candidates (nonstandard extension)
+#include "NanoDimu.h" 
 
-  // mu 2 from Dimu
-  vector<Int_t> Dimut2_muIdx;    // pointer to second muon
-  vector<Float_t> Dimut2_dxy;    // dxy of second muon w.r.t. allocated vertex
-  vector<Float_t> Dimut2_dz;     // dz of second muon w.r.t. allocated vertex
-
-  // Dimu
-  vector<Float_t> Dimu_pt;       // Dimuon pt  after refit
-  vector<Float_t> Dimu_eta;      // Dimuon eta after refit
-  vector<Float_t> Dimu_phi;      // Dimuon phi after refit
-  vector<Float_t> Dimu_rap;      // Dimuon rapidity after refit
-  vector<Float_t> Dimu_mass;     // Dimuon mass
-  vector<Int_t>   Dimu_charge;   // Dimuon charge
-  vector<Int_t>   Dimu_simIdx;   // matched true gamma/Z/meson in genparticle
-  vector<Int_t>   Dimu_vtxIdx;   // associated prim. vtx (can differ from 1,2)
-  vector<Float_t> Dimu_chi2;     // chi2 of Dimuon vertex
-  vector<Float_t> Dimu_dlxy;     // Dimuon decay length in xy
-  vector<Float_t> Dimu_dlxyErr;  // Dimuon decay length uncertainty in xy
-  vector<Float_t> Dimu_dlxySig;  // Dimuon decay length significance in xy
-  vector<Float_t> Dimu_cosphixy; // cosine of angle (momentum, decay length) xy
-  vector<Float_t> Dimu_dl;       // Dimuon decay length in 3D (typically > xy)
-  vector<Float_t> Dimu_dlErr;    // Dimuon decay length uncertainty in 3D (>xy)
-  vector<Float_t> Dimu_dlSig;    // Dimuon decay length significance in 3D 
-  vector<Float_t> Dimu_cosphi;   // cosine of angle (momentum, decay length) 3D
-  vector<Float_t> Dimu_ptfrac;   // Dimuon_pt/sum pt at vertex *** not final***
-  vector<Float_t> Dimu_x;        // Dimuon vertex x
-  vector<Float_t> Dimu_y;        // Dimuon vertex y
-  vector<Float_t> Dimu_z;        // Dimuon vertex z
-  vector<Float_t> Dimu_Covxx;    // Dimuon vertex covariance
-  vector<Float_t> Dimu_Covyx;
-  vector<Float_t> Dimu_Covzx;
-  vector<Float_t> Dimu_Covyy;
-  vector<Float_t> Dimu_Covzy;
-  vector<Float_t> Dimu_Covzz;
-
-
-//////////////////////////// for S.Wunsch variables ///////////////
+//////////////////////////// for electron variables ///////////////
 
   /// nanoAOD subset ///
-
+/* 
 // Electrons
   const static int max_el = 128;
   UInt_t value_el_n;
@@ -974,19 +822,16 @@ private:
   float value_el_phi[max_el];
   float value_el_mass[max_el];
   Int_t value_el_charge[max_el];
-  // nuha
   Int_t value_el_tightCharge[max_el];
   
   float value_el_pfreliso03all[max_el];
   float value_el_pfreliso03chg[max_el];
-  // nuha
   float value_el_dr03TkSumPtOld[max_el];
   float value_el_dr03TkSumPt[max_el];  
   float value_el_dr03EcalRecHitSumEtOld[max_el];
   float value_el_dr03EcalRecHitSumEt[max_el];  
 
   float value_el_dr03HcalTowerSumEt[max_el];
-  // nuha
   float value_el_dr03HcalDepth1TowerSumEtOld[max_el];
   float value_el_dr03HcalDepth1TowerSumEt[max_el];
 
@@ -995,7 +840,6 @@ private:
   UChar_t value_el_lostHits[max_el];
   float value_el_convDist[max_el];
   float value_el_convDcot[max_el];
-  // nuha
   bool  value_el_convVetoOld[max_el];
   bool  value_el_convVeto[max_el];
   
@@ -1006,12 +850,16 @@ private:
   float value_el_hoe[max_el];
   float value_el_sieieR1[max_el];
   float value_el_sieie[max_el];
-  // nuha
   float value_el_eInvMinusPInvOld[max_el];
   float value_el_eInvMinusPInv[max_el];
   
   float value_el_SCeta[max_el];
   Int_t value_el_cutBased[max_el];
+
+  float value_el_x[max_el];
+  float value_el_y[max_el];
+  float value_el_z[max_el];
+  Int_t value_el_vtxIdx[max_el]; 
 
   float value_el_dxy[max_el];
   float value_el_dxyErr[max_el];
@@ -1025,6 +873,9 @@ private:
   bool value_el_isNano[max_el];
 
   UInt_t Electron_nNano; // counter for official nanoAOD electrons
+
+
+//////////////////////////// for other variables ///////////////
 
 // Photons
   const static int max_ph = 100;
@@ -1066,6 +917,7 @@ private:
   const static int max_jet = 300;
   UInt_t value_jet_n;
   float value_jet_pt[max_jet];
+  float value_jet_ptuncor[max_jet];
   float value_jet_eta[max_jet];
   float value_jet_phi[max_jet];
   float value_jet_mass[max_jet];
@@ -1078,217 +930,63 @@ private:
   float value_jet_chHEF[max_jet];
   float value_jet_neEmEF[max_jet];
   float value_jet_neHEF[max_jet];
+  float value_jet_CEMF[max_jet];
+  float value_jet_MUF[max_jet];
+  float value_jet_NumConst[max_jet]; 
+  float value_jet_CHM[max_jet];
+  int value_jet_id[max_jet];
 
+  // jet correction label, can/should this be moved elsewhere?
+  std::string mJetCorr;
+//  std::string mJetCorr_ak5;
+
+//GenJets
+  const static int max_gjet = 300;
+  UInt_t value_gjet_n;
+  float value_gjet_pt[max_gjet];
+  float value_gjet_eta[max_gjet];
+  float value_gjet_phi[max_gjet];
+  float value_gjet_mass[max_gjet];
+
+// FatJets
+  const static int max_fatjet = 300;
+  UInt_t value_fatjet_n;
+  float value_fatjet_pt[max_fatjet];
+  float value_fatjet_eta[max_fatjet];
+  float value_fatjet_phi[max_fatjet];
+  float value_fatjet_mass[max_fatjet];
+  float value_fatjet_area[max_fatjet];
+  int value_fatjet_nConstituents[max_fatjet];
+  int value_fatjet_nElectrons[max_fatjet];
+  int value_fatjet_nMuons[max_fatjet];
+  float value_fatjet_chEmEF[max_fatjet];
+  float value_fatjet_chHEF[max_fatjet];
+  float value_fatjet_neEmEF[max_fatjet];
+  float value_fatjet_neHEF[max_fatjet];
+ */
+// Track Jets
+  /* const static int max_trackjet = 300;
+  UInt_t value_trackjet_n;
+  float value_trackjet_pt[max_trackjet];
+  float value_trackjet_eta[max_trackjet];
+  float value_trackjet_phi[max_trackjet];
+  float value_trackjet_mass[max_trackjet];
+  float value_trackjet_area[max_trackjet];
+  int value_trackjet_nConstituents[max_trackjet];
+  int value_trackjet_nElectrons[max_trackjet];
+  int value_trackjet_nMuons[max_trackjet];
+ */
 // Flags
   edm::InputTag custom_tag;
   std::vector<std::string> custom_flag;
   std::vector<uint8_t> custom_bit;
 
-//////////////////////////// for Dmeson variables ////////////////////////////
-  
-  /// nanoAOD extension /// 
-    
-  //------------------------------ For D0 branches --------------------------//
-  UInt_t nD0;  
-  // track 1 from D0
-  vector<Float_t> D0t1_pt;       // track 1 pt  after refit
-  vector<Float_t> D0t1_eta;      // track 1 eta after refit
-  vector<Float_t> D0t1_phi;      // track 1 phi after refit
-  vector<Int_t> D0t1_chg;        // track 1 charge
-  vector<Int_t> D0t1_tkIdx;      // *
-  vector<Float_t> D0t1_Kprob;    // * temporarily misused for Strip dEdx
-  vector<Float_t> D0t1_piprob;   // * temporarily misused for Strip dEdxErr
-  vector<Int_t> D0t1_dEdxnmeas;  // # of dEdx measurements
-  vector<Int_t> D0t1_dEdxnsat;   // # of saturated dEdx measurements
-  vector<Int_t> D0t1_vtxIdx;     // track 1 primary vertex before refit 
-  vector<Float_t> D0t1_chindof;  // track 1 chi2/ndof
-  vector<Int_t> D0t1_nValid;     // track 1 Valid Tracker hits
-  vector<Int_t> D0t1_nPix;       // track 1 Valid Pixel Hits
-  vector<uint8_t> D0t1_isHighPurity; // high purity flag
-  vector<Float_t> D0t1_dxy;      // track 1 dxy w.r.t. *** what? ***
-  vector<Float_t> D0t1_dz;       // track 1 dz w.r.t. *** what? ***
-  vector<Int_t> D0t1_pdgId;      // * 
-
-  // track 2 from D0
-  vector<Float_t> D0t2_pt;       // track 2 pt  after refit
-  vector<Float_t> D0t2_eta;      // track 2 eta after refit
-  vector<Float_t> D0t2_phi;      // track 2 phi after refit
-  vector<Int_t> D0t2_chg;        // track 2 charge
-  vector<Int_t> D0t2_tkIdx;      // *
-  vector<Float_t> D0t2_Kprob;    // * temporarily misused for Strip dEdx
-  vector<Float_t> D0t2_piprob;   // * temporarily misused for Strip dEdxErr
-  vector<Int_t> D0t2_dEdxnmeas;  // # of dEdx measurements
-  vector<Int_t> D0t2_dEdxnsat;   // # of saturated dEdx measurements
-  vector<Int_t> D0t2_vtxIdx;     // track 2 primary vertex before refit
-  vector<Float_t> D0t2_chindof;  // track 2 chi2/ndof
-  vector<Int_t> D0t2_nValid;     // track 2 Valid Tracker hits
-  vector<Int_t> D0t2_nPix;       // track 2 Valid Pixel hits
-  vector<uint8_t> D0t2_isHighPurity; // high purity flag
-  vector<Float_t> D0t2_dxy;      // track 2 dxy w.r.t. *** what? ***
-  vector<Float_t> D0t2_dz;       // track 2 dz  w.r.t. *** what? ***
-  vector<Int_t> D0t2_pdgId;      // *
-
-  // D0
-  vector<Float_t> D0_pt;         // D0 pt  after refit
-  vector<Float_t> D0_eta;        // D0 eta after refit
-  vector<Float_t> D0_phi;        // D0 phi after refit
-  vector<Float_t> D0_rap;        // D0 rapidity after refit
-  vector<Float_t> D0_mass12;     // D0 mass 1=K
-  vector<Float_t> D0_mass21;     // D0 mass 2=K
-  vector<Float_t> D0_massKK;     // D0 mass both=K
-  vector<Int_t>   D0_simIdx;     // matched true D0 in genparticle list
-  vector<Int_t>   D0_DstarIdx;   // equivalent D0 in Dstar list
-  vector<uint8_t> D0_ambiPrim;   // flag indicating ambigous primary assignment
-  vector<Int_t>   D0_vtxIdx;     // associated prim. vtx (can differ from 1,2)
-  vector<uint8_t> D0_hasMuon;    // true if either "K" or "pi" is muon
-  vector<Float_t> D0_chi2;       // chi2 of D0 vertex
-  vector<Float_t> D0_dlxy;       // D0 decay length in xy
-  vector<Float_t> D0_dlxyErr;    // D0 decay length uncertainty in xy
-  vector<Float_t> D0_dlxySig;    // D0 decay length significance in xy
-  vector<Float_t> D0_cosphixy;   // cosine of angle (momentum, decay length) xy
-  vector<Float_t> D0_dl;         // D0 decay length in 3D (typically > xy)
-  vector<Float_t> D0_dlErr;      // D0 decay length uncertainty in 3D (>xy)
-  vector<Float_t> D0_dlSig;      // D0 decay length significance in 3D 
-  vector<Float_t> D0_cosphi;     // cosine of angle (momentum, decay length) 3D
-  vector<Float_t> D0_ptfrac;     // D0_pt/sum pt at vertex *** not final ***
-  vector<Float_t> D0_ptfrac15;   // D0_pt/sum pt at vertex in cone 1.5
-  vector<Float_t> D0_ptfrac10;   // D0_pt/sum pt at vertex in cone 1.0
-  vector<Float_t> D0_ptfrac07;   // D0_pt/sum pt at vertex in cone 0.7
-  vector<Float_t> D0_ptfrac04;   // D0_pt/sum pt at vertex in cone 0.4
-  vector<Float_t> D0_x;          // D0 vertex x
-  vector<Float_t> D0_y;          // D0 vertex y
-  vector<Float_t> D0_z;          // D0 vertex z
-  vector<Float_t> D0_Covxx;      // D0 vertex covariance
-  vector<Float_t> D0_Covyx;
-  vector<Float_t> D0_Covzx;
-  vector<Float_t> D0_Covyy;
-  vector<Float_t> D0_Covzy;
-  vector<Float_t> D0_Covzz;
-
-
-  //----------------------------- For Dstar branches ------------------------//
-  UInt_t nDstar;
-
-  // Slow Pion from Dstar
-  vector<Float_t> Dstarpis_pt;      // Dstar slow pion pt before refit
-  vector<Float_t> Dstarpis_eta;     // Dstar slow pion eta before refit
-  vector<Float_t> Dstarpis_phi;     // Dstar slow pion phi before refit
-  vector<Float_t> Dstarpis_ptr;     // Dstar slow pion pt after refit
-  vector<Float_t> Dstarpis_etar;    // Dstar slow pion eta after refit
-  vector<Float_t> Dstarpis_phir;    // Dstar slow pion phi after refit
-  vector<Int_t> Dstarpis_chg;       // Dstar slow pion charge 
-                                    // (=charge of Dstar for right sign)
-  vector<Int_t> Dstarpis_tkIdx;     // *
-  vector<Float_t> Dstarpis_Kprob;    // * temporarily misused for Strip dEdx
-  vector<Float_t> Dstarpis_piprob;   // * temporarily misused for Strip dEdxErr
-  vector<Int_t> Dstarpis_dEdxnmeas;  // # of dEdx measurements
-  vector<Int_t> Dstarpis_dEdxnsat;   // # of saturated dEdx measurements
-  vector<Int_t> Dstarpis_vtxIdx;    // slow pion primary vertex before refit
-  vector<Float_t> Dstarpis_chindof; // slow pion chi2/ndof 
-  vector<Float_t> Dstarpis_chir;    // slow pion refit chi2
-  vector<Int_t> Dstarpis_nValid;    // slow pion Valid Tracker hits
-  vector<Int_t> Dstarpis_nPix;      // slow pion Valid Pixel hits
-  vector<Float_t> Dstarpis_dxy;     // slow pion dx w.r.t. *** what? ***
-  vector<Float_t> Dstarpis_dz;      // slow pion dz w.r.t. *** what? ***
-
-
-  // D0 from Dstar
-  vector<Float_t> DstarD0_pt;       // D0 from D* pt
-  vector<Float_t> DstarD0_eta;      // D0 from D* eta
-  vector<Float_t> DstarD0_phi;      // D0 from D* phi
-  vector<Float_t> DstarD0_mass;     // D0 from D* mass
-  vector<Float_t> DstarD0_chi2;     // D0 from D* vertex chi2
-  vector<Float_t> DstarD0_dlxy;     // D0 from D* decay length xy
-  vector<Float_t> DstarD0_dlxyErr;  // D0 from D* decay length error xy
-  vector<Float_t> DstarD0_dlxySig;  // D0 from D* deacy length significance xy
-  vector<Float_t> DstarD0_cosphixy; // D0 from D* cosine (momentum, dl) xy
-  vector<Float_t> DstarD0_dl;       // D0 from D* decay length 3D
-  vector<Float_t> DstarD0_dlErr;    // D0 from D* decay length error 3D
-  vector<Float_t> DstarD0_dlSig;    // D0 from D* decay length significance 3D
-  vector<Float_t> DstarD0_cosphi;   // D0 from D* cosine (momentum, dl) 3D
-  vector<Float_t> DstarD0_ptfrac;   // D0 pt/all had sum pt at vtx (not final)
-  vector<Float_t> DstarD0_ptfrac15; // D0 pt/all had sum pt at vtx in cone 1.5
-  vector<Float_t> DstarD0_ptfrac10; // D0 pt/all had sum pt at vtx in cone 1.0
-  vector<Float_t> DstarD0_ptfrac07; // D0 pt/all had sum pt at vtx in cone 0.7
-  vector<Float_t> DstarD0_ptfrac04; // D0 pt/all had sum pt at vtx in cone 0.4
-  vector<Float_t> DstarD0_x;        // D0 vertex x
-  vector<Float_t> DstarD0_y;        // D0 vertex y
-  vector<Float_t> DstarD0_z;        // D0 vertex z
-  vector<Int_t>   DstarD0_simIdx;   // matched true D0 in genparticle list
-  vector<Int_t>   DstarD0_recIdx;   // equivalent D0 in D0 list
-  vector<uint8_t> DstarD0_ambiPrim; // flag indicating ambigous prim. vtx ass. 
-
-  // Kaon from Dstar
-  vector<Float_t> DstarK_pt;        // Kaon pt
-  vector<Float_t> DstarK_eta;       // Kaon eta
-  vector<Float_t> DstarK_phi;       // Kaon phi
-  vector<Int_t> DstarK_chg;         // Kaon charge
-  vector<Int_t> DstarK_tkIdx;       // *
-  vector<Float_t> DstarK_Kprob;     // * temporarily misused for Strip dEdx
-  vector<Float_t> DstarK_piprob;    // * temporarily misused for Strip dEdxErr
-  vector<Int_t> DstarK_dEdxnmeas;   // # of dEdx measurements
-  vector<Int_t> DstarK_dEdxnsat;    // # of saturated dEdx measurements
-  vector<Int_t> DstarK_vtxIdx;      // Kaon primary vertex before refit 
-  vector<Float_t> DstarK_chindof;   // Kaon chi2/ndof
-  vector<Int_t> DstarK_nValid;      // Kaon Valid Tracker hits
-  vector<Int_t> DstarK_nPix;        // Kaon Pixel hits
-  vector<uint8_t> DstarK_isHighPurity; // high purity flag
-  vector<Float_t> DstarK_dxy;       // Kaon dxy w.r.t. *** what? ***
-  vector<Float_t> DstarK_dz;        // Kaon dz w.r.t. *** what? ***
-
-  // Pion from Dstar
-  vector<Float_t> Dstarpi_pt;       // Pion pt
-  vector<Float_t> Dstarpi_eta;      // Pion eta 
-  vector<Float_t> Dstarpi_phi;      // Pion phi
-  vector<Int_t> Dstarpi_chg;        // Pion charge (wrong sign allowed)
-  vector<Int_t> Dstarpi_tkIdx;      // *
-  vector<Float_t> Dstarpi_Kprob;    // * temporarily misused for Strip dEdx
-  vector<Float_t> Dstarpi_piprob;   // * temporarily misused for Strip dEdxErr
-  vector<Int_t> Dstarpi_dEdxnmeas;  // # of dEdx measurements
-  vector<Int_t> Dstarpi_dEdxnsat;   // # of saturated dEdx measurements
-  vector<Int_t> Dstarpi_vtxIdx;     // Pion primary vertex before refit  
-  vector<Float_t> Dstarpi_chindof;  // Pion chi2/ndof
-  vector<Int_t> Dstarpi_nValid;     // Pion Valid Tracker hits
-  vector<Int_t> Dstarpi_nPix;       // Pion Valid Pixel hits
-  vector<uint8_t> Dstarpi_isHighPurity; // high purity flag
-  vector<Float_t> Dstarpi_dxy;      // Pion dxy w.r.t *** what? ***
-  vector<Float_t> Dstarpi_dz;       // Pion dz w.r.t *** what? ***
-  
-  // Dstar
-  vector<Float_t> Dstar_pt;         // D* pt  after D0 refit, w/o pis refit
-  vector<Float_t> Dstar_eta;        // D* eta after D0 refit, w/o pis refit
-  vector<Float_t> Dstar_phi;        // D* phi after D0 refit, w/o pis refit
-  vector<Float_t> Dstar_rap;        // D* rapidity after D0 refit, w/o pis refit
-  vector<Float_t> Dstar_deltam;     // mD*-mD0 after D0 refit, w/o pis refit 
-  vector<Float_t> Dstar_deltamr;    // mD*-mD0 after D0 refit, with pis refit 
-  vector<Int_t> Dstar_simIdx;       // associated true D* in Genpart, if any
-  vector<Int_t> Dstar_vtxIdx;       // ass. prim. vtx (may differ from tracks)
-  vector<uint8_t> Dstar_hasMuon;    // true if "K" or "pi" or "pislow" is muon
-  vector<Float_t> Dstar_ptfrac;     // pt(D*)/pt(all hadrons at prim. vertex)
-
-  // flag for printout of "good" D0 candidates
-  int Bingo;
-  float D0vtxx, D0vtxy, D0vtxz;
-  float D0motx, D0moty, D0motz;
-
-// *** move this to a different place ***
-  // Qun below  Trigger Object
-  UInt_t nTrigObj;                   // number of stored Trigger Obj
-  vector<Int_t> TrigObj_id;          // ID of the object
-  vector<Int_t> TrigObj_filterBits;  // filter bits - *** still to be implemented ***
-  vector<Float_t> TrigObj_pt;        // pt
-  vector<Float_t> TrigObj_phi;        // phi
-  vector<Float_t> TrigObj_eta;        // eta
-  //vector<Int_t> TrigObj_id;          // ID of the object
-  //vector<Float_t> TrigObj_pt;        // pt
-  //vector<Float_t> TrigObj_phi;        // phi
-  //vector<Float_t> TrigObj_eta;        // eta
-  //Qconst static int max_TrigObj = 300;
-  //QInt_t  TrigObj_id[max_TrigObj];          // ID of the object
-  //QFloat_t  TrigObj_pt[max_TrigObj];        // pt
-  //QFloat_t TrigObj_phi[max_TrigObj];        // phi
-  //QFloat_t TrigObj_eta[max_TrigObj];        // eta
-  // Qun above  Trigger Object
+#ifdef charm
+// for D mesons (nonstandard extension)
+#include "NanoDmeson.h"
+#endif
+  // Josry prompt/nonprompt flag extension
+  int promptFlag;
 
 }; // end of class member
 
@@ -1314,16 +1012,33 @@ const unsigned nReserve_OtherPV = 3;
 const unsigned nReserve_PVtx = 128; 
 const unsigned nReserve_Muon = 128;
 const unsigned nReserve_TrigObj = 1024;
-const unsigned nReserve_Dimu = 128;
-const unsigned nReserve_D0 = 1024;
-const unsigned nReserve_Dstar = 1024;
+const unsigned nReserve_Dimu = 256;
+//const unsigned nReserve_D0 = 1024;
+const unsigned nReserve_D0 = 4096;
+//const unsigned nReserve_Dstar = 1024;
+//const unsigned nReserve_Dstar = 8192;
+const unsigned nReserve_Dstar = 16384;
 const int maxnmusim = 128;
 const int maxnD0sim = 128;
+const int maxnDplussim = 128;
 const int maxnDstarsim = 128;
 const int maxnmuonlist = 128;
+const int maxneleclist = 128;
 
 // preset flag for trigger steering
+
+#ifdef CMSSW11plus
+#ifdef miniAOD
+// ********************* temporary *******************
+// need to recheck miniAOD trigger treatment
+bool skiptrigger = true;
+// ***************************************************
+#else
 bool skiptrigger = false;
+#endif
+#else
+bool skiptrigger = false;
+#endif
 // preset first event flag 
 bool firstevent = true;
 
@@ -1344,6 +1059,7 @@ NanoAnalyzer::NanoAnalyzer(const edm::ParameterSet& iConfig)
 {
   // configure parameters
   outFile = iConfig.getParameter<std::string>("outFile");
+  // check infile and set isData to true if it does not contain "SIM"
   isData = iConfig.getParameter<bool>("isData");
   hlt_proc = iConfig.getParameter<std::string>("hltProcess");
   nanoext = iConfig.getParameter<bool>("nanoExtension");
@@ -1355,20 +1071,21 @@ NanoAnalyzer::NanoAnalyzer(const edm::ParameterSet& iConfig)
   //processName_ = iConfig.getParameter<std::string>("processName"); //Qun
   triggerName_ = iConfig.getParameter<std::string>("triggerName"); //Qun
 
+#ifdef charm
   // Make sure uncertainty in histogram bins is calculated correctly
   TH1::SetDefaultSumw2(true);
+#endif
 
-  // nuha
   // https://github.com/cms-sw/cmssw/blob/CMSSW_9_4_X/PhysicsTools/NanoAOD/python/electrons_cff.py#L100
   // https://github.com/cms-sw/cmssw/blob/CMSSW_9_4_X/PhysicsTools/NanoAOD/plugins/IsoValueMapProducer.cc#L49
   //relative_ = iConfig.getParameter<bool>("relative");
   
-  // afiqaize get actual CMSSW version 
+  // get actual CMSSW version 
   // however being that the branch above saves int, strip out all non-digits from the output
   // FIXME this ignores the ifdef flag (likely not an issue)
   CMSSW = 0;
 
-  // afiqaize get the actual CMSSW that is used
+  // get the actual CMSSW that is used
   // the current approach ignores patch and pre releases
   std::string cmssw_ver = edm::getReleaseVersion();
   std::vector<size_t> usc(4, 0);
@@ -1385,11 +1102,11 @@ NanoAnalyzer::NanoAnalyzer(const edm::ParameterSet& iConfig)
 #endif
 
   if (CMSSW == 0) {
-    cout << "*** ALARM ***: NanoAnalyzer: proper CMSSW ifdef flag not set" << endl;
+    std::cout << "*** ALARM ***: NanoAnalyzer: proper CMSSW ifdef flag not set" << std::endl;
     exit(1);
   }
   else {
-    cout << "CMSSW flag set to CMSSW" << CMSSW << endl;   
+    std::cout << "CMSSW flag set to CMSSW" << CMSSW << std::endl;   
   }
 
   // for debug: get and print some info on map
@@ -1397,55 +1114,36 @@ NanoAnalyzer::NanoAnalyzer(const edm::ParameterSet& iConfig)
   //std::cout << "max_bucket_count = " << hlt_bit.max_bucket_count() << std::endl;
   //std::cout << "max_load_factor = " << hlt_bit.max_load_factor() << std::endl;
 
+
+  // initialize GenParticle extensions
+
   GenPV_x = -999.;
   GenPV_y = -999.;
   GenPV_z = -999.;
   GenPV_recIdx = -1;
   GenPV_chmult = 0;
 
-  Bingo = 0;
-  D0vtxx = 0.; D0vtxy = 0.; D0vtxz = 0.;
-  D0motx = 0.; D0moty = 0.; D0motz = 0.;  
+  dcyvtxx = 0.; dcyvtxy = 0.; dcyvtxz = 0.;
+  motx = 0.; moty = 0.; motz = 0.; 
+  // Josry prompt/nonprompt Flag extension
+  promptFlag = -1;
 
-// The following code deals with the content of overlapping datasets
-// auto-detection of dataset from triggers occurring in it
+  // initialize nonstandard Trigger variables
+#include "NanoTriggerInit.h" 
 
-// Events can occur on several datasets. Therefore set everything to true to start with.
-// But if no trigger of a given data set fired, the event is definitely *not* from this dataset.
-// If no trigger information available (2010 MC) all flags will remain true 
-MCdataset = true;
-ZeroBiasdataset = true;
-MinimumBiasdataset = true;
-Commissioningdataset = true;
-Mudataset = true;
-MuHaddataset = true;
-DoubleMudataset = true;
-MuEGdataset = true;
-Electrondataset = true;
-DoubleElectrondataset = true;
-Photondataset = true;
-MuOniadataset = true;
-Charmoniumdataset = true;
-MuMonitordataset = true;
-EGMonitordataset = true;
-Jetdataset = true;
-MultiJetdataset = true;
-JetMETTauMonitordataset = true;
-BTaudataset = true;
-BParkingdataset = true;
-METFwddataset = true;
-datasetisunique = false;
-dataset = "unknown";
 
 #ifdef CMSSW7plus
+// *********************************
 // consumes initialization for Run 2
+// *********************************
 #ifndef miniAOD
+  // ***************
   // AOD collections
+  // ***************
   muTkn = consumes<reco::MuonCollection>(edm::InputTag("muons"));
   gmuTkn = consumes<reco::TrackCollection>(edm::InputTag("globalMuons"));
   trkTkn = consumes<reco::TrackCollection>(edm::InputTag("generalTracks"));
   beamTkn = consumes<reco::BeamSpot>(edm::InputTag("offlineBeamSpot"));
-  //eTkn = consumes<reco::GsfElectronCollection>(edm::InputTag("gsfElectrons"));
   eTkn = consumes<reco::GsfElectronCollection>(edm::InputTag("gedGsfElectrons"));
   photTkn = consumes<reco::PhotonCollection>(edm::InputTag("photons"));
   tauTkn = consumes<reco::PFTauCollection>(edm::InputTag("hpsPFTauProducer"));
@@ -1460,20 +1158,58 @@ dataset = "unknown";
   
 #ifdef Compatibility
   // official nanoAOD uses primary vertex without beam spot constraint
+  // (being changed for Run 3)
   primvtxTkn = consumes<reco::VertexCollection>(edm::InputTag("offlinePrimaryVertices"));
 #endif
 #ifndef Compatibility
   // to get primary vertices with beam spot constraint 
   primvtxTkn = consumes<reco::VertexCollection>(edm::InputTag("offlinePrimaryVerticesWithBS"));
 #endif
+  // all Run 2 and 3
+  // should use ak4PFJetsCHS in miniAOD/nanoAOD Compatibility mode
   pfjetTkn = consumes<reco::PFJetCollection>(edm::InputTag("ak4PFJets"));
+  genjetTkn = consumes<reco::GenJetCollection>(edm::InputTag("ak4GenJets"));//Qun
+  // jet correction label, will this work? doesn't so far ...
+  //mJetCorr = "ak4PFL1FastL2L3Residual";
+
+#ifndef CMSSW11plus
+  // not Run 3
+  // should use ak8PFJetsCHS in miniAOD/nanoAOD Compatibility mode
+#ifdef CMSSW106plus
+  // ultra-legacy
+  //pffatjetTkn = consumes<reco::PFJetCollection>(edm::InputTag("ak8PFJets"));
+  //trackjetTkn = consumes<reco::TrackJetCollection>(edm::InputTag("ak5TrackJets"));
+  pffatjetTkn = consumes<reco::PFJetCollection>(edm::InputTag("ak8PFJetsCHS"));
+  trackjetTkn = consumes<reco::TrackJetCollection>(edm::InputTag("ak4TrackJets"));
+#elif defined CMSSW7XX
+  // 2015
+  // ak8 jets and track jets do not yet/no longer exist in CMSSW_7_6_X (or 7_5 MC)? use ak4
+  pffatjetTkn = consumes<reco::PFJetCollection>(edm::InputTag("ak4PFJets"));
+#else
+  // pre_UL Run 2016-2018
+  // ak8 jets and track jets do not yet/no longer exist in CMSSW_10_2_X? use ak4
+  pffatjetTkn = consumes<reco::PFJetCollection>(edm::InputTag("ak4PFJets"));
+  //trackjetTkn = consumes<reco::TrackJetCollection>(edm::InputTag("ak5TrackJets"));
+#endif
+#else
+  // Run 3
+  // does not seem to exist on Run 3 test MC set?
+  //pffatjetTkn = consumes<reco::PFJetCollection>(edm::InputTag("ak8PFJets"));
+  //pffatjetTkn = consumes<reco::PFJetCollection>(edm::InputTag("ak8PFJetsCHS"));
+  //trackjetTkn = consumes<reco::TrackJetCollection>(edm::InputTag("ak5TrackJets"));
+  // just duplicate ak4jets for the time being 
+  pffatjetTkn = consumes<reco::PFJetCollection>(edm::InputTag("ak4PFJets"));
+  // and don't use track jets at all
+  //trackjetTkn = consumes<reco::TrackJetCollection>(edm::InputTag("ak5TrackJets"));
+#endif
+
   // dEdx (from example M. Soares)
-  //  dedxMapStripTag_ = consumes<edm::ValueMap<reco::DeDxData>> (iConfig.getParameter<edm::InputTag>("dedxHarmonic2"));
+  //dedxMapStripTag_ = consumes<edm::ValueMap<reco::DeDxData>> (iConfig.getParameter<edm::InputTag>("dedxHarmonic2"));
   //dedxMapPixelTag_ = consumes<edm::ValueMap<reco::DeDxData>> (iConfig.getParameter<edm::InputTag>("dedxPixelHarmonic2"));
   dedxMapStripTag_ = consumes<edm::ValueMap<reco::DeDxData>>(edm::InputTag("dedxHarmonic2"));
   dedxMapPixelTag_ = consumes<edm::ValueMap<reco::DeDxData>>(edm::InputTag("dedxPixelHarmonic2"));
   // dEdx (from example M. Soares)
-  //  dedxMapStripTag_(consumes<edm::ValueMap<reco::DeDxData>> (iConfig.getParameter<edm::InputTag>("dedxHarmonic2")));
+  //dedxMapStripTag_(consumes<edm::ValueMap<reco::DeDxData>> (iConfig.getParameter<edm::InputTag>("dedxHarmonic2")));
   //dedxMapPixelTag_(consumes<edm::ValueMap<reco::DeDxData>> (iConfig.getParameter<edm::InputTag>("dedxPixelHarmonic2")));
 #endif
 
@@ -1489,6 +1225,14 @@ dataset = "unknown";
   tauTkn = consumes<pat::TauCollection>(edm::InputTag("slimmedTaus"));
   genTkn = consumes<reco::GenParticleCollection>(edm::InputTag("prunedGenParticles"));
   pfjetTkn = consumes<pat::JetCollection>(edm::InputTag("slimmedJets"));
+  genjetTkn = consumes<reco::GenJetCollection>(edm::InputTag("slimmedGenJets"));//Qun
+  // actually, the slimmedJets refer to AOD   
+  pffatjetTkn = consumes<pat::JetCollection>(edm::InputTag("slimmedJetsAK8"));
+
+  // need to insert something here for fatjets and trackjets
+  //pffatjetTkn = consumes<pat::JetCollection>(edm::InputTag("slimmedJets"));
+  //pffatjetTkn = consumes<pat::JetCollection>(edm::InputTag("slimmedJetsAK8"));
+  //trackjetTkn = consumes<pat::TrackJetCollection>(edm::InputTag("slimmedTrackJets"));
   pfmetTkn = consumes<pat::METCollection>(edm::InputTag("slimmedMETs"));
   //  calo MET actually also available via slimmedMETs
   calometTkn = consumes<pat::METCollection>(edm::InputTag("slimmedMETs"));
@@ -1505,14 +1249,6 @@ dataset = "unknown";
 
   // CMSSWplus 
 #endif
-
-// *** move to proper place ***
-// <Qun>
-//  TrigObj_id = new vector<Int_t>;
-//  TrigObj_pt = new vector<Float_t>;
-//  TrigObj_phi = new vector<Float_t>;
-//  TrigObj_eta = new vector<Float_t>;
-// </Qun>
 
   //cout << "init" << endl;
 
@@ -1535,11 +1271,11 @@ NanoAnalyzer::~NanoAnalyzer()
 void
 NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
-  // using namespace edm;
+  // using namespace edm;  // already used above
   // using namespace reco;
   // using namespace std;
   using namespace muon; // for TMOneStationTight
-  using namespace trigger; // Qun
+  using namespace trigger; // for trigger
   
 //////////////////////////////////////////////////////////////////////////////
 ///////////////////////// load relevant event information ////////////////////
@@ -1559,6 +1295,19 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   Handle<reco::CaloMETCollection> calomet;
   Handle<reco::PFMETCollection> met;
   Handle<reco::PFJetCollection> jets;
+  Handle<reco::PFJetCollection> fatjets;
+  // track jets are available for 4_2, 5_3 and 10_6, but not for others
+#ifndef CMSSW11plus
+#ifdef CMSSW106plus
+  Handle<reco::TrackJetCollection> trackjets;
+#endif
+#ifdef CMSSW53X
+  Handle<reco::TrackJetCollection> trackjets;
+#endif
+#ifdef CMSSW42X
+  Handle<reco::TrackJetCollection> trackjets;
+#endif
+#endif
   // dEdx (from example Giacomo Fedi)
   //Handle<reco::DeDxDataValueMap> energyLossHandle;
   //edm:: Handle<edm::ValueMap<reco::DeDxData>> energyLossHandle;
@@ -1588,27 +1337,20 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   Handle<pat::METCollection> calomet;
   Handle<pat::METCollection> met;
   Handle<pat::JetCollection> jets;  
+  Handle<pat::JetCollection> fatjets;  
+  //Handle<pat::TrackJetCollection> trackjets;  
 #endif
 
   // common AOD and miniAOD collections
   edm::Handle<reco::GenParticleCollection> genParticles;
   edm::Handle<reco::BeamSpot> beamSpotHandle;
   edm::Handle<reco::VertexCollection> Primvertex;
+  edm::Handle<reco::GenJetCollection> genjets;//Qun
   // for trigger and flags
   edm::Handle<edm::TriggerResults> trigger_handle;
   edm::Handle<edm::TriggerResults> custom_handle;
 
-  /*
-#ifndef CMSSW7plus
-  // seems not needed/not to be working for CMSSW7 and higher?
-  edm::Handle<edm::TriggerResults> triggerResults;
-#endif
-  */
-  // the following is a duplication which still needs to be treated
-  //edm::Handle<edm::TriggerResults> triggerResultsHandle_; //Qun
-  //edm::Handle<trigger::TriggerEvent> triggerEventHandle_;  //Qun 17-10-19 TriggerObj
-
-  //cout << "hello get event" << endl; 
+  // cout << "hello get event" << endl; 
 
 #ifndef CMSSW7plus
   // for Run 1, use access via getByLabel
@@ -1623,7 +1365,21 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   //iEvent.getByLabel("caloMet", calomet);
   iEvent.getByLabel("met", calomet);
   iEvent.getByLabel("ak5PFJets", jets);
-  //iEvent.getByLabel("ak7PFJets", jets);
+  iEvent.getByLabel("ak7PFJets", fatjets);
+  iEvent.getByLabel("ak5TrackJets", trackjets);
+  iEvent.getByLabel("ak5GenJets", genjets);//Qun
+
+  // jet correction label
+//  mJetCorr = "ak5CaloL2L3";
+//  mJetCorr_ak5 = "jetCorr_ak5";
+
+#ifdef CMSSW42X
+  // for 2010
+  mJetCorr = "ak5PFL2L3";
+#else
+  // for 2011/12
+  mJetCorr = "ak5PFL1FastL2L3Residual";
+#endif
 
   // choose primary vertices with/without beam spot
   // see https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideOfflinePrimaryVertexProduction
@@ -1635,12 +1391,15 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   // for compatibility with official nanoAOD
   iEvent.getByLabel("offlinePrimaryVertices",Primvertex);
 #endif
+
+#ifdef charm
   // dEdx (from example G. Fedi)
   int dedxexist = 1;
   // exists!
   if (!iEvent.getByLabel("dedxHarmonic2", energyLossHandle)) dedxexist=0;
-  // does not exist
+  // does not exist for Run 1
   //if (!iEvent.getByLabel("dedxPixelHarmonic2", energyLossHandle)) dedxexist=0;
+#endif
 
   // trigger and flags (Afiq)
   if (!skiptrigger)
@@ -1667,12 +1426,20 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   iEvent.getByToken(primvtxTkn, Primvertex);
   // iEvent.getByToken(muCorrmetTkn, muCorrmets);
   iEvent.getByToken(pfjetTkn, jets);
+  iEvent.getByToken(genjetTkn, genjets);//Qun
+  iEvent.getByToken(pffatjetTkn, fatjets);
+#ifndef CMSSW11plus
+#ifdef CMSSW106plus
+  iEvent.getByToken(trackjetTkn, trackjets);
+#endif
+#endif
   // trigger
   iEvent.getByToken(trigTkn, triggerResultsHandle_);
   iEvent.getByToken(trigEvn, triggerEventHandle_); //Qun
   // nuha
   iEvent.getByToken(hConvTkn, hConversions);
   
+#ifdef charm
   // dEdx (from example M. Soares)
   int stripmap = 1;
   edm::Handle<edm::ValueMap<reco::DeDxData>> dedxStMap;
@@ -1680,6 +1447,7 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   int pixmap = 1;
   edm::Handle<edm::ValueMap<reco::DeDxData>> dedxPixMap;
   if (!iEvent.getByToken(dedxMapPixelTag_,dedxPixMap)) pixmap=0;  
+#endif
 #endif
 
 #ifdef miniAOD
@@ -1699,6 +1467,10 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   iEvent.getByToken(primvtxTkn, Primvertex);
   // iEvent.getByToken(muCorrmetTkn, muCorrmets);
   iEvent.getByToken(pfjetTkn, jets);
+  iEvent.getByToken(genjetTkn, genjets);//Qun
+  // need to insert something here for fatjets and trackjets
+  iEvent.getByToken(pffatjetTkn, fatjets);
+  // iEvent.getByToken(trackjetTkn, trackjets);
   // trigger (*** fix duplication ***)
   iEvent.getByToken(trigTkn, triggerResultsHandle_);  
   iEvent.getByToken(trigEvn, triggerEventHandle_); //Qun
@@ -1713,7 +1485,7 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   // CMSSW7plus
 #endif
 
-  //cout << "hello get run/event info" << endl; 
+  // cout << "hello get run/event info" << endl; 
 
 // *************************************************************
 //------------------ get run/event info ------------------------
@@ -1743,7 +1515,7 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
               // skip trigger for 2010 MC  (not available)
               if (run == 1) {
                 if (!skiptrigger)    // on first event only 
-                   cout << "Trigger information will be skipped" << endl;
+		  std::cout << "Trigger information will be skipped" << std::endl;
                 skiptrigger = true;
               }
 #endif
@@ -1754,7 +1526,6 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 // *************************************************************
 //      sets hlt_bit.at pointers, i.e. whether trigger has fired or not
 
-  // afiqaize (still need to make consistent with the following) 
   //cout << "hello get trigger" << endl; 
 
   if (!hlt_proc.empty()) {
@@ -1823,18 +1594,15 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
                 // all other flags remain unchanged ...
               }
 
-	      // Qun below  Trigger Object
+	      // Trigger Object
 	      nTrigObj = 0;                   // number of stored Trigger Obj
 	      TrigObj_id.clear();
 	      TrigObj_filterBits.clear();
 	      TrigObj_pt.clear();
 	      TrigObj_eta.clear();
 	      TrigObj_phi.clear();
-	      //TrigObj_id->clear();
-	      //TrigObj_pt->clear();
-	      //TrigObj_eta->clear();
-	      //TrigObj_phi->clear();
-	      // Qun above  Trigger Object
+
+              //cout << "hello TrigObj" << endl;
 
               // if not to be skipped
               if (!skiptrigger) {
@@ -1847,8 +1615,9 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 		//edm::InputTag("hltTriggerSummaryAOD", "", "HLT");//
 		edm::InputTag triggerEventTag_("hltTriggerSummaryAOD", "", "HLT");  
 		iEvent.getByLabel(triggerEventTag_,triggerEventHandle_);
+#endif
 		if (!triggerEventHandle_.isValid()) {
-		  cout << "HLTEventAnalyzerAOD::analyze: Error in getting TriggerEvent product from Event!" << endl;
+		  std::cout << "HLTEventAnalyzerAOD::analyze: Error in getting TriggerEvent product from Event!" << std::endl;
 		  return;		  
 		}
 		if (triggerEventHandle_.isValid()) {
@@ -1874,24 +1643,16 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 		    //cout << iO << " " << TO.id() << " " << TO.pt() << " " << TO.eta() << " " << TO.phi() << " " << TO.mass() << endl;
                     // Ids indicate kind of trigger object, e.g. +-13 = muon
 		    if (TO.id()!=0 && fabs(TO.id())<60) {
-		      //TrigObj_id[nTO_QQ]=TO.id();
-		      //TrigObj_pt[nTO_QQ]=TO.pt();
-		      //TrigObj_eta[nTO_QQ]=TO.eta();
-		      //TrigObj_phi[nTO_QQ]=TO.phi();
                       if (nTO_QQ < nReserve_TrigObj) {
 		        TrigObj_id.push_back(TO.id());
 		        TrigObj_filterBits.push_back(-1);
 		        TrigObj_pt.push_back(TO.pt());
 		        TrigObj_eta.push_back(TO.eta());
 		        TrigObj_phi.push_back(TO.phi());
-		        //TrigObj_id->push_back(TO.id());
-		        //TrigObj_pt->push_back(TO.pt());
-		        //TrigObj_eta->push_back(TO.eta());
-		        //TrigObj_phi->push_back(TO.phi());
 		        nTO_QQ++; 
 		        //cout << "The TriggerObjects: #, id, pt, eta, phi, mass of TrigObj " << TrigObj_id[nTO_QQ-1] <<  " " << TrigObj_pt[nTO_QQ-1] <<  " " <<TrigObj_eta[nTO_QQ-1] <<  " " << TrigObj_phi[nTO_QQ-1] << endl;
 		      } 
-                      else cout << "*** nReserve_TrigObj exceeded" << endl;    
+                      else std::cout << "*** nReserve_TrigObj exceeded. n = " << nTO_QQ << std::endl;    
 		    }    
 		    //cout << "The TriggerObjects: #, id, pt, eta, phi, mass of TrigObj" << TrigObj_id[nTO_QQ-1] <<  " " << TrigObj_pt[nTO_QQ-1] <<  " " <<TrigObj_eta[nTO_QQ-1] <<  " " << TrigObj_phi[nTO_QQ-1] << endl;
 		    //cout << "The TriggerObjects: #, id, pt, eta, phi, mass of TrigObj" << TrigObj_id[iO] <<  " " << TrigObj_pt[iO] <<  " " <<TrigObj_eta[iO] <<  " " << TrigObj_phi[iO] << endl;
@@ -1946,15 +1707,12 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 		}
 	        //const TriggerObjectCollection& TOC(triggerEventHandle_->getObjects());
 
-		//above  Qun
-#endif
                 const edm::TriggerNames& trigNames = iEvent.triggerNames(*triggerResultsHandle_); 
-		//cout << "QQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQ" << endl; //Qun
                 //cout << "test hlt QQQQQQQQQQQQQQQQ " << hltConfig_.size() <<endl; //Qun
 
                 // check whether trigger info was obtained successfully
                 if (!triggerResultsHandle_.isValid()) {
-                  cout << "Nano::analyze: Error in getting TriggerResults product from Event!" << endl;
+		  std::cout << "Nano::analyze: Error in getting TriggerResults product from Event!" << std::endl;
                   // should always be available for data, but not necessarily 
                   // for e.g. 2010 MC
                   if (run > 1) {
@@ -2020,25 +1778,25 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
                 //      }
 
 
-// datasets from which triggers are being treated are 
+// datasets from which special trigger variables are being treated are so far
 //   (* = still to be implemented)
 //
 //   Commissioning10: (7 TeV and 900 GeV): Zerobias and MinimumBias 
 //
-//      2010A       2010B         2011A             2012B/C
-//      ZeroBias 
+//      2010A       2010B         2011A (add B*)    2012B/C
+//      ZeroBias   (Zerobias)
 //      MinimumBias MinimumBias   MinimumBias       MinimumBias*     <-- next
 //   Commissioning* Commissioning                   Commissioning*
 //      Mu          Mu          ( SingleMu        ( SingleMu
 //                              ( DoubleMu        ( DoubleMuParked
 //                              ( MuHad           ( MuHad*
-//      next -->                ( MuEG            ( MuEG*
-//      MuMonitor*  MuMonitor
-//      MuOnia*     MuOnia        MuOnia* <-- next  MuoniaParked*
-//      EG*         Electron    ( SingleElectron* ( SingleElectron*
+//                              ( MuEG            ( MuEG*
+//      MuMonitor   MuMonitor
+//      MuOnia      MuOnia        MuOnia* <-- next  MuoniaParked*
+//      EG          Electron    ( SingleElectron* ( SingleElectron*
 //                              ( DoubleElectron  ( DoubleElectron*  
 //		                ( ElectronHad*    ( ElectronHad*
-//      EGmonitor*  EGMonitor
+//      EGmonitor   EGMonitor
 //          next--> Photon*     ( Photon*        (( SinglePhoton*
 //                                               (( DoublePhoton*
 //                                               (( DoublePhotonHighPt*
@@ -2049,11 +1807,11 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 //                              ( Tau*            ( TauParked*
 //                              ( TauPlusX*       ( TauPlusX
 //      JetMET*     Jet         ( Jet            (( Jet*
-//                                               (( JetHT*
+//      next--^                                  (( JetHT*
 //                                               (( JetMon* 
 //                              ( HT*             ( HTMHTParked*
 //JetMETTauMonitor* JetMETTauMonitor
-//                  Multijet      MultiJet*
+//                  MultiJet      MultiJet*
 //                  METFwd*     ( MET*            ( MET*
 //                              ( METBTag* 
 //                                                  HcalNZS*
@@ -2246,11 +2004,12 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
                 } // skiptrigger
 
 
+
 /////////////////////////////////////////////////////////////////////////////
 ////////////// and now proceed to analysis of physics content ///////////////
 /////////////////////////////////////////////////////////////////////////////
 
-	      //cout << "hello physics" << endl; 
+	      // cout << "hello physics" << endl; 
 
 //////////////////////////////////////////////////////////////////////////////
 ////////////////////////////// Gen Particle Start ////////////////////////////
@@ -2260,6 +2019,7 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   GenPart_eta.clear();
   GenPart_phi.clear();
   GenPart_mass.clear();
+  GenPart_charge.clear();
   GenPart_pdgId.clear();
   GenPart_status.clear();
   GenPart_statusFlags.clear();
@@ -2271,6 +2031,8 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   GenPart_sparpdgId.clear();
   GenPart_numberOfDaughters.clear();
   GenPart_nstchgdaug.clear();
+  //Josry prompt/nonprompt Flag extension
+  GenPart_promptFlag.clear();
   GenPart_vx.clear();
   GenPart_vy.clear();
   GenPart_vz.clear();
@@ -2284,13 +2046,14 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   p4pit.SetPtEtaPhiE(0., 0., 0., 0.);
   p4D0t.SetPtEtaPhiE(0., 0., 0., 0.);
 
-  int nmusim =0;
+/*   int nmusim =0;
   int idmusim[maxnmusim];
   float chgmusim[maxnmusim];
   float ptmusim[maxnmusim];
   float etamusim[maxnmusim];
-  float phimusim[maxnmusim];
+  float phimusim[maxnmusim]; */
 
+#ifdef charm
   int nD0sim =0;
   int idD0sim[maxnD0sim];
   float ptD0sim[maxnD0sim];
@@ -2306,15 +2069,27 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   float ptD0t2sim[maxnD0sim];
   float etaD0t2sim[maxnD0sim];
   float phiD0t2sim[maxnD0sim];
+  // Josry2 prompt/nonprompt Dstar/D0 extension
+  int pD0Flagsim[maxnD0sim];
 
   int nDstarsim =0;
   int idDstarsim[maxnDstarsim];
   float ptDstarsim[maxnDstarsim];
   float etaDstarsim[maxnDstarsim];
   float phiDstarsim[maxnDstarsim];
+  // Josry2 prompt/nonprompt Dstar/D0 extension
+  int pDstarFlagsim[maxnDstarsim];
 
-  // clear flag for printout of "good" D0 candidates for this event
-  Bingo = 0;
+  int nDplussim =0;
+  int idDplussim[maxnDplussim];
+  float ptDplussim[maxnDplussim];
+  float etaDplussim[maxnDplussim];
+  float phiDplussim[maxnDplussim];
+  // Josry2 prompt/nonprompt Dstar/D0 extension
+  int pDplusFlagsim[maxnDplussim];
+#endif
+
+
   // clear GenPV variables for each event; somehow needed for GenPV_chmult?
   GenPV_x = -999.;
   GenPV_y = -999.;
@@ -2335,51 +2110,188 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
       // store true vertex = vertex of first nonzero entry
       if (!vertexfilled && genp.vz() != 0){
-	GenPV_x = genp.vx();
-	GenPV_y = genp.vy();
-	GenPV_z = genp.vz();
+        GenPV_x = genp.vx();
+        GenPV_y = genp.vy();
+        GenPV_z = genp.vz();
         GenPV_recIdx = -1;  // will be filled later
         vertexfilled = true;
       }
 
       // count charged particle multiplicity
-      // somehow doesn't work?
+      // somehow doesn't work? Beware, this is the CMS status, not the generator status!
       if (genp.status()==1 && genp.charge()!=0) ++GenPV_chmult; 
       
-      // add pt, eta, phi and mass distributions for each gen particle
-      // store b and c quarks, D0, D*+, and muons
-      // *** needs to be changed to official nanoAOD genparticle filter ***
-      if ( (std::abs(genp.pdgId()) == 5) || (std::abs(genp.pdgId()) == 4) || (std::abs(genp.pdgId()) == 421) || (std::abs(genp.pdgId()) == 413) || (std::abs(genp.pdgId()) == 13) ){
+
+      // documentation for miniAOD slimmed genparticles?
+      // from https://github.com/cms-sw/cmssw/blob/CMSSW_9_2_4/PhysicsTools/PatAlgos/python/slimming/prunedGenParticles_cfi.py
+      // (see also https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideGenParticlePruner 
+      //  and https://github.com/cms-sw/cmssw/blob/master/PhysicsTools/HepMCCandAlgos/plugins/GenParticlePruner.cc  )
+      //  and for nanoAOD: https://github.com/cms-sw/cmssw/blob/master/PhysicsTools/HepMCCandAlgos/plugins/GenParticlePruner.cc
+      //  https://github.com/cms-sw/cmssw/blob/master/PhysicsTools/NanoAOD/python/genparticles_cff.py)
+      //  miniAOD:
+      //  "++keep abs(pdgId) == 11 || abs(pdgId) == 13 || abs(pdgId) == 15", # keep leptons, with history
+      //  "drop   status == 2",                                              # drop the shower part of the history
+      //  "keep++ (400 < abs(pdgId) < 600) || (4000 < abs(pdgId) < 6000)",   # keep decays for BPH studies
+      //  "drop status == 1",                                                # drop the status=1 from BPH
+      //  "keep+ (400 < abs(pdgId) < 600) || (4000 < abs(pdgId) < 6000)",    # but keep first daughter, to allow lifetime determinations
+      //  "keep abs(pdgId) == 11 || abs(pdgId) == 13 || abs(pdgId) == 15",   # keep leptons (also status1)
+      //  "keep abs(pdgId) == 12 || abs(pdgId) == 14 || abs(pdgId) == 16",   # keep neutrinos
+      //  "+keep pdgId == 22 && status == 1 && (pt > 10 || isPromptFinalState())", # keep gamma above 10 GeV (or all prompt) and its first parent
+      //  "+keep abs(pdgId) == 11 && status == 1 && (pt > 3 || isPromptFinalState())", # keep first parent of electrons above 3 GeV (or prompt)
+      //  "keep++ abs(pdgId) == 15",                                         # but keep keep taus with decays
+      //  "drop  status > 30 && status < 70 ", 				   # remove pythia8 garbage
+      //  "drop  pdgId == 21 && pt < 5",                                     # remove pythia8 garbage
+      //  "drop   status == 2 && abs(pdgId) == 21",                          # but remove again gluons in the inheritance chain
+      //  "keep abs(pdgId) == 23 || abs(pdgId) == 24 || abs(pdgId) == 25 || abs(pdgId) == 6 || abs(pdgId) == 37 ",   # keep VIP(articles)s
+      //  "keep abs(pdgId) == 310 && abs(eta) < 2.5 && pt > 1 ",                                                     # keep K0
+      //  "+keep abs(pdgId) == 13 && status == 1", # keep muon parents
+      //# keep heavy flavour quarks for parton-based jet flavour
+      //  "keep (4 <= abs(pdgId) <= 5)",
+      //# keep light-flavour quarks and gluons for parton-based jet flavour
+      //  "keep (1 <= abs(pdgId) <= 3 || pdgId = 21) & (status = 2 || status = 11 || status = 71 || status = 72) && pt>5", 
+      //# keep onia states, phi, X(3872), Z(4430)+ and psi(4040)
+      //  "keep+ abs(pdgId) == 333",
+      //  "keep+ abs(pdgId) == 9920443 || abs(pdgId) == 9042413 || abs(pdgId) == 9000443",
+      //  "keep+ abs(pdgId) == 443 || abs(pdgId) == 100443 || abs(pdgId) == 10441 || abs(pdgId) == 20443 || abs(pdgId) == 445 || abs(pdgId) == 30443",
+      //  "keep+ abs(pdgId) == 553 || abs(pdgId) == 100553 || abs(pdgId) == 200553 || abs(pdgId) == 10551 || abs(pdgId) == 20553 || abs(pdgId) == 555",
+      //# additional c hadrons for jet fragmentation studies
+      //  "keep abs(pdgId) = 10411 || abs(pdgId) = 10421 || abs(pdgId) = 10413 || abs(pdgId) = 10423 || abs(pdgId) = 20413 || abs(pdgId) = 20423 || abs(pdgId) = 10431 || abs(pdgId) = 10433 || abs(pdgId) = 20433", 
+      //# additional b hadrons for jet fragmentation studies
+      //  "keep abs(pdgId) = 10511 || abs(pdgId) = 10521 || abs(pdgId) = 10513 || abs(pdgId) = 10523 || abs(pdgId) = 20513 || abs(pdgId) = 20523 || abs(pdgId) = 10531 || abs(pdgId) = 10533 || abs(pdgId) = 20533 || abs(pdgId) = 10541 || abs(pdgId) = 10543 || abs(pdgId) = 20543", 
+      //#keep SUSY particles
+      //  "keep (1000001 <= abs(pdgId) <= 1000039 ) || ( 2000001 <= abs(pdgId) <= 2000015)",
+      //# keep protons 
+      //  "keep pdgId = 2212",
+      //  "keep status == 3 || ( 21 <= status <= 29) || ( 11 <= status <= 19)",  #keep event summary (status=3 for pythia6, 21 <= status <= 29 for pythia8)
+      //  "keep isHardProcess() || fromHardProcessFinalState() || fromHardProcessDecayed() || fromHardProcessBeforeFSR() || (statusFlags().fromHardProcess() && statusFlags().isLastCopy())",  #keep event summary based on status flags
+
+      // the nanoAOD configuration (also for the statusFlag) can be found in 
+      // https://github.com/cms-sw/cmssw/blob/master/PhysicsTools/NanoAOD/python/genparticles_cff.py
+
+      // cout << "genparticle" << endl; 
+
+      // keep matrix element summary (nano)
+      if ( (genp.status() == 3 || (genp.status()>20 && genp.status()<30))
+#ifdef CMSSW7plus
+      // keep hard process up to last copy
+	|| (genp.isHardProcess() || genp.fromHardProcessDecayed() || genp.fromHardProcessFinalState() || (genp.statusFlags().fromHardProcess() && genp.statusFlags().isLastCopy()))
+#endif 
+      // keep high pT partons right before hadronization (nano)
+        || (genp.status()>70 && genp.status()<80 && genp.pt()>15) 
+      // keep all heavy quarks (plus!) already included in previous? maybe not all
+        || (std::abs(genp.pdgId()) == 4 || std::abs(genp.pdgId()) == 5 || std::abs(genp.pdgId()) == 6) 
+      // keep all charged leptons and neutrinos (nano)
+        || (std::abs(genp.pdgId()) > 10 && std::abs(genp.pdgId()) < 17)
+      // keep also one particle back in the lepton history (nano)  (in nano for charged only, but neutrino is implicit)
+      //   up to four-body decays (or higher if early in list)
+           || (genp.numberOfDaughters()>0 && std::abs(genp.daughter(0)->pdgId()) > 10 && std::abs(genp.daughter(0)->pdgId()) < 17)
+	   || (genp.numberOfDaughters()>1 && std::abs(genp.daughter(1)->pdgId()) > 10 && std::abs(genp.daughter(1)->pdgId()) < 17)
+           || (genp.numberOfDaughters()>2 && std::abs(genp.daughter(2)->pdgId()) > 10 && std::abs(genp.daughter(2)->pdgId()) < 17)
+           || (genp.numberOfDaughters()>3 && std::abs(genp.daughter(3)->pdgId()) > 10 && std::abs(genp.daughter(3)->pdgId()) < 17)
+      // keep tau decay products (nano)
+	   || (genp.mother() != nullptr && std::abs(genp.mother()->pdgId()) == 15)
+      // keep prompt tau decay decay products if high pT (nano)
+#ifdef CMSSWplus
+	   || (genp.mother() != nullptr && genp.mother()->mother() != nullptr && std::abs(genp.mother()->mother()->pdgId()) == 15 && genp.isPromptDecayed() )  
+#endif
+      // keep photons if prompt or pt>10 (nano)
+#ifdef CMSSW7plus
+	   || (std::abs(genp.pdgId()) == 22 && genp.status() == 1 && (genp.isPromptFinalState() || genp.pt() > 10.))
+#else
+	   || (std::abs(genp.pdgId()) == 22 && genp.status() == 1 && (genp.pt() > 10.))
+#endif
+      // keep photon parents if prompt or pt>10 (nano) (up to 3-body decays)
+#ifdef CMSSW7plus
+	   || (genp.numberOfDaughters()>0 && std::abs(genp.daughter(0)->pdgId()) == 22 && genp.daughter(0)->status() == 1 && (dynamic_cast<const GenParticle *>(genp.daughter(0))->isPromptFinalState() || (genp.daughter(0)->pt() > 10.)))
+	   || (genp.numberOfDaughters()>1 && std::abs(genp.daughter(1)->pdgId()) == 22 && genp.daughter(1)->status() == 1 && (dynamic_cast<const GenParticle *>(genp.daughter(1))->isPromptFinalState() || genp.daughter(1)->pt() > 10.))
+	   || (genp.numberOfDaughters()>2 && std::abs(genp.daughter(2)->pdgId()) == 22 && genp.daughter(2)->status() == 1 && (dynamic_cast<const GenParticle *>(genp.daughter(2))->isPromptFinalState() || genp.daughter(2)->pt() > 10.))
+#else
+	   || (genp.numberOfDaughters()>0 && std::abs(genp.daughter(0)->pdgId()) == 22 && genp.daughter(0)->status() == 1 && (genp.daughter(0)->pt() > 10.))
+	   || (genp.numberOfDaughters()>1 && std::abs(genp.daughter(1)->pdgId()) == 22 && genp.daughter(1)->status() == 1 && (genp.daughter(1)->pt() > 10.))
+	   || (genp.numberOfDaughters()>2 && std::abs(genp.daughter(2)->pdgId()) == 22 && genp.daughter(2)->status() == 1 && (genp.daughter(2)->pt() > 10.))
+#endif
+      // keep VIP(article)s, i.e. Z, W, H, H+ (nano)
+        || (std::abs(genp.pdgId()) == 23 || std::abs(genp.pdgId()) == 24 || std::abs(genp.pdgId()) == 25 || std::abs(genp.pdgId()) == 37)
+      // keep all ground state heavy flavour hadrons, mesons and baryons, open and hidden (nano) 
+        || ((std::abs(genp.pdgId()) > 400 && std::abs(genp.pdgId()) < 600) || (std::abs(genp.pdgId()) > 4000 && std::abs(genp.pdgId()) < 6000)) 
+
+        || (std::abs(genp.pdgId()) == 211 && std::abs(genp.pdgId()) == 321)
+      // keep also a selected subset of lower lying excited heavy flavour hadrons (plus!)
+        || ((std::abs(genp.pdgId()) > 10400 && std::abs(genp.pdgId()) < 10600) || (std::abs(genp.pdgId()) > 20400 && std::abs(genp.pdgId()) < 20600)
+        || (std::abs(genp.pdgId()) > 30400 && std::abs(genp.pdgId()) < 30600))  
+        || ((std::abs(genp.pdgId()) >100400 && std::abs(genp.pdgId()) <100600) || (std::abs(genp.pdgId()) >200400 && std::abs(genp.pdgId()) <200600))  
+      // keep SUSY fiction particles (nano)
+        || ((std::abs(genp.pdgId()) > 1000000 && std::abs(genp.pdgId()) < 1000040) || (std::abs(genp.pdgId()) > 2000000 && std::abs(genp.pdgId()) < 2000016)) 
+        ){
+
+
+        // cout << "genparticle 2, pdgId " << genp.pdgId() << endl;
 
         // all these particle types are also stored in standard nanoAOD
         bool isNano = true;
+        // put exceptions here 
+        // heavy quarks with status different from those kept in default nanoAOD
+#ifdef CMSSW7plus        
+        if ((std::abs(genp.pdgId()) == 4 || std::abs(genp.pdgId()) == 5 || std::abs(genp.pdgId()) == 6) && !(genp.status() ==3 || (genp.status() >20 && genp.status() < 30) || (genp.status()>70 && genp.status()<80 && genp.pt()>15) ) && !(genp.isHardProcess() || genp.fromHardProcessDecayed() || genp.fromHardProcessFinalState() || (genp.statusFlags().fromHardProcess() && genp.statusFlags().isLastCopy())) ) isNano = false;
+#endif
 
-        // get pointer to mother (reco::Candidate type!):
-        const Candidate * mom = genp.mother();
-	// and store type and index 
-        int parpdgId = mom->pdgId();
+        // Onia wich do not directly decay to leptons
+        if (((std::abs(genp.pdgId()) > 10400 && std::abs(genp.pdgId()) < 10600) || (std::abs(genp.pdgId()) > 20400 && std::abs(genp.pdgId()) < 20600))  
+	     || ((std::abs(genp.pdgId()) >100400 && std::abs(genp.pdgId()) <100600) || (std::abs(genp.pdgId()) >200400 && std::abs(genp.pdgId()) <200600))) {
+	  if (genp.numberOfDaughters()<2) isNano=false;
+          else if ((std::abs(genp.daughter(0)->pdgId())>10 && std::abs(genp.daughter(0)->pdgId())<17 ) 
+	    || (std::abs(genp.daughter(1)->pdgId())>10 && std::abs(genp.daughter(1)->pdgId())<17)) isNano = false;
+         }
 
-        int sparpdgId = mom->pdgId();
-        // if nonstable should add further loops here 
-        // until stable parent is found ... not yet implemented
+        int parpdgId = 0;
+        int sparpdgId = 0;
+
+        if ( genp.mother() != nullptr) {
+          // get pointer to mother (reco::Candidate type!):
+          const Candidate * mom = genp.mother();
+          // and store type and index 
+	  //parpdgId = genp.mother()->pdgId();
+          parpdgId = mom->pdgId();
+          sparpdgId = mom->pdgId();
+          // if nonstable should add further loops here 
+          // until stable parent is found ... not yet implemented
+        }
+          
+        // cout << parpdgId << endl; 
+
+        // get id of mother (always higher in list than daughter)
+	// didn't get pointer comparison to work, so use pt for match 
+        int genpmid = -999;
+        if (parpdgId!=0) {
+          for (unsigned int eee = 0; eee < GenPart_pt.size(); ++eee) {
+            if ((GenPart_pt.at(eee) == genp.mother()->pt()) && (GenPart_eta.at(eee) == genp.mother()->eta())) {
+              genpmid = eee;
+              continue;
+            }
+          }  
+        } 
+
+        // cout << "hello daughters" << endl; 
 
         // get no. of daughters:
         size_t n = genp.numberOfDaughters();
         int nstchgdaug = 0;
 
         // initialize vertex variables for this event
-	D0vtxx=0, D0vtxy=0, D0vtxz=0; 
+	dcyvtxx=0; dcyvtxy=0; dcyvtxz=0; 
         // loop over daughters:
         for(size_t j = 0; j < n; ++j) {
 
           // get pointer d to a daughter  (reco::Candidate type!):
           const Candidate * d = genp.daughter( j );
+          // if want to access extended  GenParticle options: 
+          //const GenParticle *d = dynamic_cast<const GenParticle *>( genp.daughter( j ) );
   
           // fill position of decay vertex (creation vertex of first daughter)
           if (j==0) {
-            D0vtxx = d->vx();
-            D0vtxy = d->vy();
-            D0vtxz = d->vz();
+            dcyvtxx = d->vx();
+            dcyvtxy = d->vy();
+            dcyvtxz = d->vz();
           }
 
           // check daughter's stability (status 1) and charge, 
@@ -2387,29 +2299,36 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
           if (d->status() == 1 && d->charge() != 0) ++nstchgdaug; 
         }
         // creation point of D0 is decay point of mother
-        D0motx = genp.vx();
-        D0moty = genp.vy();
-        D0motz = genp.vz();
+        motx = genp.vx();
+        moty = genp.vy();
+        motz = genp.vz();
 
-        // make list of interesting candidates
-	// print out interesting candidates
+        // Josry prompt/nonprompt Dstar/D Flag extension 
+        float sqrtQuadSum = -9999;
+        //taken from MuDhistos:
+        //sqrtQuadSum = sqrt( std::abs(GenPart_mvx[gg]-GenPV_x) * std::abs(GenPart_mvx[gg]-GenPV_x) + std::abs(GenPart_mvy[gg]-GenPV_y) * std::abs(GenPart_mvy[gg]-GenPV_y) + std::abs(GenPart_mvz[gg]-GenPV_z) * std::abs(GenPart_mvz[gg]-GenPV_z) );
+        // GenPart_mvx  is here    motx
+        // GenPV_x      is here    genp.vx()
+        promptFlag = -1;
+        sqrtQuadSum = sqrt( std::abs(motx-GenPV_x) * std::abs(motx-GenPV_x) + std::abs(moty-GenPV_y) * std::abs(moty-GenPV_y) + std::abs(motz-GenPV_z) * std::abs(motz-GenPV_z) );
+        if ( sqrtQuadSum == 0 )  promptFlag = 1;
+        else promptFlag = 0;
 
-#ifdef Bingo
-        // beauty
-        if (genp.pdgId()==5) {cout << "Bingo beauty" << endl;}
-#endif
+        // cout << "hello interesting" << endl;
 
         // muons
-        if (abs(genp.pdgId())==13 && genp.status()==1 && nmusim < maxnmusim) {
+/*         if (abs(genp.pdgId())==13 && genp.status()==1 && nmusim < maxnmusim) {
           idmusim[nmusim]=ee; 
           chgmusim[nmusim]=genp.charge();
           ptmusim[nmusim]=genp.pt();
           etamusim[nmusim]=genp.eta();
           phimusim[nmusim]=genp.phi();
-	  ++nmusim;
+	        ++nmusim;
         }
-        if (nmusim >= maxnmusim) cout << "!!! maxnmusim exceeded !!!" << endl;
+        if (nmusim >= maxnmusim) std::cout << "!!! maxnmusim exceeded !!!" << std::endl; */
 
+#ifdef charm
+        // cout << "hello muons" << endl;
         // D0 mesons decaying to Kpi, KK, or pipi
         if (abs(genp.pdgId())==421 && n==2 && nstchgdaug ==2 && nD0sim < maxnD0sim) {
           idD0sim[nD0sim]=ee; 
@@ -2425,10 +2344,12 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
           chgD0t2sim[nD0sim]=(genp.daughter(1))->charge();
           ptD0t2sim[nD0sim]=(genp.daughter(1))->pt();
           etaD0t2sim[nD0sim]=(genp.daughter(1))->eta();
-          phiD0t2sim[nD0sim]=(genp.daughter(1))->phi(); 
+          phiD0t2sim[nD0sim]=(genp.daughter(1))->phi();
+          // Josry2 prompt/nonprompt Dstar/D0 extension
+          pD0Flagsim[nD0sim] = promptFlag; 
 	  ++nD0sim;
         } 
-        if (nD0sim >= maxnD0sim) cout << "!!! maxnD0sim exceeded !!!" << endl;
+        if (nD0sim >= maxnD0sim) std::cout << "!!! maxnD0sim exceeded !!!" << std::endl;
 
         // all charged Dstar mesons
         if (abs(genp.pdgId())==413 && nDstarsim < maxnDstarsim) {
@@ -2436,38 +2357,28 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
           ptDstarsim[nDstarsim]=genp.pt();
           etaDstarsim[nDstarsim]=genp.eta();
           phiDstarsim[nDstarsim]=genp.phi();
+          // Josry2 prompt/nonprompt Dstar/D0 extension
+          pDstarFlagsim[nDstarsim]=promptFlag;
           ++nDstarsim;
         } 
-        if (nDstarsim >= maxnDstarsim) cout << "!!! maxnDstarsim exceeded !!!" << endl;
+        if (nDstarsim >= maxnDstarsim) std::cout << "!!! maxnDstarsim exceeded !!!" << std::endl;
 
-#ifdef Bingo
-        if (std::abs(genp.pdgId()) >100 && std::abs(genp.eta())<2.5) {
-          cout << "event " << event << " pdgID " << genp.pdgId() << " pt " << genp.pt() << " eta " << genp.eta() << " phi " << genp.phi() << " n " << n << " " << nstchgdaug << " par " << parpdgId << endl;
-          if (n == 2 && nstchgdaug == 2) { 
-            Bingo = 1; 
-            cout << "*** Bingo D0 ***" << endl; 
-            if (std::abs(parpdgId) == 413) {
-              cout << "*** Bingo D* ***" << endl;
-            }
-            // print vertex position of D0 and mother
-            cout << "D0 vertex " << D0vtxx << " " << D0vtxy << " " << D0vtxz << " mother " << D0motx << " " << D0moty << " " << D0motz << endl;
-
-            // loop over daughters:
-            for(size_t j = 0; j < n; ++j) {
-
-              // get pointer d to a daughter  (reco::Candidate type!):
-              const Candidate * d = genp.daughter( j );
-
-              // print information
-              cout << " pdgID " << d->pdgId() << " pt " << d->pt() << " eta " << d->eta() << " phi " << d->phi() << endl;
-              if (abs(d->pdgId()) == 321) p4Kt.SetPtEtaPhiM(d->pt(), d->eta(), d->phi(), Kmass);
-              if (abs(d->pdgId()) == 211) p4pit.SetPtEtaPhiM(d->pt(), d->eta(), d->phi(), pimass);
-
-	    } // end for j loop
-            p4D0t = p4Kt + p4pit;
-            cout << "true D0 mass " << p4D0t.M() << endl;
-          } // end if
-        } // end interesting
+        // all charged Dplus mesons
+        if (abs(genp.pdgId())==411 && nDplussim < maxnDplussim) {
+          idDplussim[nDplussim]=ee; 
+          ptDplussim[nDplussim]=genp.pt();
+          etaDplussim[nDplussim]=genp.eta();
+          phiDplussim[nDplussim]=genp.phi();
+          // Josry2 prompt/nonprompt Dstar/D0 extension
+          pDplusFlagsim[nDplussim]=promptFlag;
+          ++nDplussim;
+        } 
+        if (nDplussim >= maxnDplussim) {
+           std::cout << "!!! maxnDplussim exceeded !!!" << std::endl;
+           // need to touch so far unused variables 
+           // in order to make compiler happy
+           cout << nDplussim << idDplussim << ptDplussim << etaDplussim << phiDplussim << pDplusFlagsim << endl;
+        }  
 #endif
 
 	if (GenPart_pt.size() < nReserve_GenPart) {
@@ -2475,32 +2386,62 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	  GenPart_eta.push_back(genp.eta());
 	  GenPart_phi.push_back(genp.phi());
 	  GenPart_mass.push_back(genp.mass());
+	  GenPart_charge.push_back(genp.charge());
 	  GenPart_pdgId.push_back(genp.pdgId());
           // status = 1: final state stable particles
           // status = 2: hadron level, unstable
-          // status = 3: parton level
+          // status = 3: parton level  (may differ according to generator)
+          // see also https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookGenParticleCandidate
 	  GenPart_status.push_back(genp.status());
-          GenPart_statusFlags.push_back(9999);
+
+// gen status flags stored bitwise, bits are: 0 : isPrompt, 1 : isDecayedLeptonHadron, 
+//     2 : isTauDecayProduct, 3 : isPromptTauDecayProduct, 4 : isDirectTauDecayProduct, 
+//     5 : isDirectPromptTauDecayProduct, 6 : isDirectHadronDecayProduct, 7 : isHardProcess, 
+//     8 : fromHardProcess, 9 : isHardProcessTauDecayProduct, 10 : isDirectHardProcessTauDecayProduct, 
+//    11 : fromHardProcessBeforeFSR, 12 : isFirstCopy, 13 : isLastCopy, 14 : isLastCopyBeforeFSR,
+#ifdef CMMSW7plus
+          uint statusflags = genp.statusFlags().isPrompt()*pow(2,0) 
+            + genp.statusFlags().isDecayedLeptonHadron()*pow(2,1)
+            + genp.statusFlags().isTauDecayProduct()*pow(2,2) 
+            + genp.statusFlags().isPromptTauDecayProduct()*pow(2,3) 
+            + genp.statusFlags().isDirectTauDecayProduct()*pow(2,4) 
+            + genp.statusFlags().isDirectPromptTauDecayProduct()*pow(2,5) 
+            + genp.statusFlags().isDirectHadronDecayProduct()*pow(2,6) 
+            + genp.statusFlags().isHardProcess()*pow(2,7) 
+            + genp.statusFlags().fromHardProcess()*pow(2,8) 
+            + genp.statusFlags().isHardProcessTauDecayProduct()*pow(2,9)
+            + genp.statusFlags().isDirectHardProcessTauDecayProduct()*pow(2,10) 
+            + genp.statusFlags().fromHardProcessBeforeFSR()*pow(2,11)
+            + genp.statusFlags().isFirstCopy()*pow(2,12)
+            + genp.statusFlags().isLastCopy()*pow(2,13) 
+            + genp.statusFlags().isLastCopyBeforeFSR()*pow(2,14);
+#else 
+          // does not yet exist
+          uint statusflags = 0;
+#endif
+          //cout << "hello status" << endl;  
+          GenPart_statusFlags.push_back(statusflags);
           // The following does not work, do something else
 	  //          GenPart_genPartIdxMother.push_back(genp.mother());
           // Rather loop over previous entries in *this* list, find parent
           // (if stored), and store index of that! 
-	  GenPart_genPartIdxMother.push_back(-999);
+	        GenPart_genPartIdxMother.push_back(genpmid);
           GenPart_Id.push_back(ee);
-	  GenPart_isNano.push_back(isNano);
-	  GenPart_parpdgId.push_back(parpdgId);
-	  GenPart_sparpdgId.push_back(sparpdgId);
-	  GenPart_numberOfDaughters.push_back(genp.numberOfDaughters());
-	  GenPart_nstchgdaug.push_back(nstchgdaug);
-          GenPart_vx.push_back(D0vtxx);
-          GenPart_vy.push_back(D0vtxy);
-          GenPart_vz.push_back(D0vtxz);
-          GenPart_mvx.push_back(D0motx);
-          GenPart_mvy.push_back(D0moty);
-          GenPart_mvz.push_back(D0motz);
+          GenPart_isNano.push_back(isNano);
+          GenPart_parpdgId.push_back(parpdgId);
+          GenPart_sparpdgId.push_back(sparpdgId);
+          GenPart_numberOfDaughters.push_back(genp.numberOfDaughters());
+          GenPart_nstchgdaug.push_back(nstchgdaug);
+          GenPart_promptFlag.push_back(promptFlag);
+          GenPart_vx.push_back(dcyvtxx);
+          GenPart_vy.push_back(dcyvtxy);
+          GenPart_vz.push_back(dcyvtxz);
+          GenPart_mvx.push_back(motx);
+          GenPart_mvy.push_back(moty);
+          GenPart_mvz.push_back(motz);
           GenPart_recIdx.push_back(-1);
 	}
-	else{cout << "WARNING!!!!! NO. OF GENPART IS MORE THAN YOUR RESERVED NO.!!!!!!" << endl;}
+	else{std::cout << "WARNING!!!!! NO. OF GENPART IS MORE THAN YOUR RESERVED NO.!!!!!!" << std::endl;}
       }
     }
   } // end of event is not data
@@ -2510,19 +2451,13 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 /////////////////////////////// Gen Particle End /////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 
-   //cout << "hello beam spot" << endl;
+   // cout << "hello beam spot" << endl;
 
 /////////////////////////////////////////////////////////////////////////////
 ///////////////////////////// Beam spot /////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////
-  // to get BeamSpot information:
-  // Handle<reco::BeamSpot> recoBeamSpotHandle;
-  // iEvent.getByLabel("offlineBeamSpot", recoBeamSpotHandle);
-  // reco::BeamSpot vertexBeamSpot= *recoBeamSpotHandle;  
-  reco::BeamSpot vertexBeamSpot= *beamSpotHandle;  
 
-  // build dummy beam spot copy for later use
-  //reco::BeamSpot dummyBeamSpot = vertexBeamSpot;  
+  reco::BeamSpot vertexBeamSpot= *beamSpotHandle;  
 
   // store beam spot info 
   Bsp_x = vertexBeamSpot.x0();
@@ -2535,7 +2470,7 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   Bsp_widthy = vertexBeamSpot.BeamWidthY();
 
           
-  //cout << "hello tracks and vertices" << endl;
+  // cout << "hello tracks and vertices" << endl;
 
 //////////////////////////////////////////////////////////////////////////////
 ///////////////////////////// Tracks and vertices Start //////////////////////
@@ -2560,7 +2495,7 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   // nanoAOD-like extension
   nPVtx=0;
 
-  //  cout << "hello vertices" << endl;
+  // cout << "hello vertices" << endl;
 
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////// Tools for Vertices //////////////////////////////
@@ -2606,6 +2541,13 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   double mupvy[maxnmuonlist];
   double mupvz[maxnmuonlist];
 
+  /* int neleclist = 0;
+  int elid[maxneleclist];
+  int elvtx[maxneleclist];
+  double elpvx[maxneleclist];
+  double elpvy[maxneleclist];
+  double elpvz[maxneleclist]; */
+
   PV_npvsGood = 0;
   nOtherPV = 0;
   float PVSimMindist = 999.;
@@ -2650,23 +2592,19 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       // fill extended vertex structure
       // just in case not all vertices are stored (otherwise redundant)
       PVtx_Id.push_back(vtxid);
-      // PVtx_chi2.push_back(primVertex_temp.chi2());
-      // PVtx_ndof.push_back(primVertex_tmp.ndof());
-      // PVtx_score.push_back(primVertex_tmp.score());
-      // PVtx_x.push_back(primVertex_tmp.x());
-      // PVtx_y.push_back(primVertex_tmp.y());
-      // PVtx_z.push_back(primVertex_tmp.z());
-      // *** find way to fill the following with sumntrk variable later ***
-      PVtx_ntrk.push_back(999);
+      //    will be refilled in NanoDmeson later (when activated)
+      PVtx_ntrk.push_back(-1);
       PVtx_ntrkfit.push_back(vite->nTracks());
       PVtx_chi2.push_back(vite->chi2());
       PVtx_ndof.push_back(vite->ndof());
       float score=0., sumpt=0.;
-      // flag to indicate whether vertex has muon
+      // flags to indicate whether vertex has muon or electron
       //   *** should this be changed to dz/dxy requirement? ***
       //       (will also work for miniAOD) 
       bool hasmuon = false;
       float hasmuonpt = 0.;
+      /* bool haselec = false;
+      float haselecpt = 0.; */
       // loop over all tracks from this vertex
       // (In miniAOD the vertices have "lost" their tracks -> loop is dummy:
       //  *** should loop over all PackedCandidates and check vertexRef and
@@ -2679,7 +2617,11 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
         // get and sum track pt
         float trackpt = trackRef->pt();
         score += trackpt*trackpt;
+
+        //
         // check whether track is muon candidate *** apply cuts??? ***
+        // and store cross-correlation information for muons and primary vertices
+        //
         bool ismuon=false;
         int muonid=-1;
 #ifndef miniAOD
@@ -2696,7 +2638,7 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
               hasmuon=true;
               // *** is the muon-vertex association loose enough? ***
               if ((itMuon->track())->pt() > hasmuonpt) hasmuonpt = (itMuon->track())->pt();
-              // cout << "has muon! " << (itMuon->track())->pt() << " track " << trackRef->pt() << endl;
+              //cout << "has muon! " << (itMuon->track())->pt() << " track " << trackRef->pt() << endl;
               // store muon-vertex association for later use
               if (nmuonlist < maxnmuonlist) {
                 muid[nmuonlist]=muonid;
@@ -2706,14 +2648,90 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
                 mupvz[nmuonlist]=vite->z();
                 ++nmuonlist;
               }
-              else { cout << "Warning !!!! maxnmuonlist too small" << endl;}
+              else { std::cout << "Warning !!!! maxnmuonlist too small" << std::endl;}
               break;
             } // if trackref
           } // if itMuon
         } // for MuonCollection
-        // sum track pt excluding muons
+
+        //
+        // check whether track is electron candidate *** apply cuts??? ***
+        // and store cross-correlation information for electrons and primary vertices
+        // *** the following compiles but the association does not fully work yet ***
+        //
+/*         bool iselec=false;
+        int elecid=-1;
+#ifndef miniAOD
+        for (reco::GsfElectronCollection::const_iterator itElec = electrons->begin(); itElec != electrons->end(); ++itElec) {
+#endif
+#ifdef miniAOD
+	for (pat::ElectronCollection::const_iterator itElec = electrons->begin(); itElec != electrons->end(); ++itElec) {
+#endif
+          // indicates position in reco::electron structure 
+          ++elecid;
+          // compare track parameters
+          //if (trackRef->pt()>4.) {
+          //  cout << "gsf pt " << itElec->gsfTrack()->pt() << endl;
+          //  cout << "track pt " << trackRef->pt() << endl;
+          //}
+          // doesn't exist
+          //cout << "pt " << itElec->gsfTrack()->track()->pt() << endl;
+	  // get track reference to full track structure
+          // the following doesn't compile
+          //const reco::TrackRef trackRefEle = itElec->castTo<reco::TrackRef>();
+          // the following compiles, but doesn't work
+          //if((itElec->track()).isNonnull()){
+	  //if((itElec->gsfTrack()).isNonnull()){
+            //cout << "pt " << itElec->track()->pt() << endl;
+            //cout << "pt " << trackRefEle->pt() << endl;
+            //if (trackRef == trackRefEle) {
+	    //if (trackRef == itElec->track()) {
+	    //the following comparison seems to be illegal 
+            //if (trackRef == itElec->gsfTrack()) {
+          // do kinematic matching: *** readjust cuts? ***
+          // might not always work, and double matching is not excluded
+          // pt within 5O%, eta within 0.1, phi within 0.1, same charge, x,y,z within 1 cm
+          // (combine pt and charge to 1/pt?) 
+          // so far this is CPU-inefficent, should make some precuts 
+	  if (abs(itElec->gsfTrack()->pt()-trackRef->pt())/itElec->gsfTrack()->pt()<0.5) {
+	    if (abs(itElec->gsfTrack()->eta()-trackRef->eta())<0.1) {
+              float eledphi = abs(itElec->gsfTrack()->phi()-trackRef->phi());
+              if (eledphi > 3.1415) eledphi = eledphi - 2.*3.1415;
+	      if (abs(eledphi) <0.1) { 
+                if (itElec->gsfTrack()->charge() == trackRef->charge()) {
+		  if (abs(itElec->gsfTrack()->vx()-vite->x())<1. && abs(itElec->gsfTrack()->vy()-vite->y())<1. && abs(itElec->gsfTrack()->vz()-vite->z())<1.) {
+              iselec=true;
+              haselec=true;
+              // the next dummy line is only introduced to avoid warning 
+              // for unused variables on some compiler versions
+              if (!iselec && !haselec) continue;
+              // use gsfTrack for pt evaluation
+              // *** is the track electron-vertex association loose enough? ***
+              if ((itElec->gsfTrack())->pt() > haselecpt) haselecpt = (itElec->gsfTrack())->pt();
+              //cout << "has electron! " << (itElec->gsfTrack())->pt()*itElec->gsfTrack()->charge() << " track " << trackRef->pt()*trackRef->charge() << endl;
+              //cout << "elect eta " << (itElec->gsfTrack())->eta() << " phi " << (itElec->gsfTrack())->phi() << " z " << (itElec->gsfTrack())->vz() << endl;
+              //cout << "track eta " << trackRef->eta() << " phi " << trackRef->phi() << " z " << vite->z() << endl;
+              // store electron-vertex association for later use
+              if (neleclist < maxneleclist) {
+                elid[neleclist]=elecid;
+                elvtx[neleclist]=vtxid;
+                elpvx[neleclist]=vite->x();
+                elpvy[neleclist]=vite->y();
+                elpvz[neleclist]=vite->z();
+                ++neleclist;
+              }
+              else { std::cout << "Warning !!!! maxneleclist too small" << std::endl;}
+              // break;  // not here, the later one is often the better one
+                  } // if z
+		} // if charge
+	      } // if phi
+            } // if trackref/eta
+          } // if itElec/pt
+        } // for ElectronCollection
+ */
+        // sum track pt excluding muons (not exluding electrons for the time being)
         if (!ismuon) sumpt += trackpt;         
-	} // for VertexTracks
+      } // for VertexTracks
       // vite->score() does not seem to exist
       if (vtxid==0) PV_score = score;
       PVtx_score.push_back(score);
@@ -2724,8 +2742,8 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       PVtx_z.push_back(vite->position().z());
       // is it possible that vite->z and vite->position.z differ?
       if (vite->z() != vite->position().z())
-         cout << "*** vertex Alarm *** " << vite->z() << " " 
-              << vite->position().z() << endl;
+	std::cout << "*** vertex Alarm *** " << vite->z() << " " 
+		  << vite->position().z() << std::endl;
       PVtx_Covxx.push_back(vite->covariance(0,0));
       PVtx_Covyx.push_back(vite->covariance(1,0));
       PVtx_Covzx.push_back(vite->covariance(2,0));
@@ -2752,8 +2770,8 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
                            vite->position().y()*vite->position().y());
       // to check that the two are the same up to float precision 
       if (rhotest != float(vite->position().Rho()))
-        cout << "*** Alarm Rho *** " << rhotest << " " 
-             << vite->position().Rho() << endl;
+	std::cout << "*** Alarm Rho *** " << rhotest << " " 
+		  << vite->position().Rho() << std::endl;
       PVtx_isGood.push_back(vtxGood);
       PVtx_isValid.push_back(vite->isValid());
       PVtx_isFake.push_back(vite->isFake());
@@ -2799,7 +2817,7 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       // net effect: MB events will always be accepted; 
       // NMB events will be accepted if they do not have muon
     }
-    else {cout << "WARNING!!!!! NO. OF vertices IS MORE THAN YOUR RESERVED NO.!!!!!!" << endl;}
+      else {std::cout << "WARNING!!!!! NO. OF vertices IS MORE THAN YOUR RESERVED NO.!!!!!!" << std::endl;}
   }
   nPVtx = PVtx_z.size();
 
@@ -2808,15 +2826,12 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 //////////////////////////////////////////////////////////////////////////////
 
 
-  //cout << "hello muon" << endl;
+  // cout << "hello muon" << endl;
 
     
 //////////////////////////////////////////////////////////////////////////////
 ///////////////////////////// Muon Collection Start //////////////////////////
 //////////////////////////////////////////////////////////////////////////////
-
-  // reintroduce muon reference histograms (pt, eta, quality, mass plots)
-  // (reimport 'old' code via include?)
 
   // define and initialize all relevant temporary muon variables
   Float_t mu_relPFIsoR03 = -9999.;
@@ -2824,6 +2839,8 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   // add isolation variables used in CMSSW 4-2-8
   Float_t mu_relIsoR03 = -9999.;
   Float_t mu_relIsoR05 = -9999.;
+  // add newer variables
+  Int_t   mu_pfIso = -1;
 
   Float_t mu_ip3d = -9999.;
   Float_t mu_ip3dBest = -9999.;
@@ -2852,6 +2869,7 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   Muon_pfRelIso03_all.clear();
   Muon_pfRelIso03_chg.clear();
   Muon_pfRelIso04_all.clear();
+  Muon_pfIsoId.clear();
   Muon_miniPFRelIso_all.clear(); 
   Muon_miniPFRelIso_chg.clear(); 
   Muon_jetIdx.clear(); 
@@ -2911,6 +2929,7 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   int muonid = -1;
 
   // set cuts *** to be tuned ***
+  // set maximum dz for muon to be considered for vertex association 
   float mindzvtxcut = 1.;
 
 #ifndef miniAOD
@@ -3155,28 +3174,6 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       mu_gnValidMuHits = recoMuon->globalTrack()->hitPattern().numberOfValidMuonHits();
     }
 
-    // probably all of the following is obsolete
-#ifndef CMSSW42X
-    // ?? why not for 42X ??
-    // tight id always uses main primary vertex //
-    //float mu_dxyprim = recoMuon->muonBestTrack()->dxy(PV_ite->position());
-    //float mu_dB = ...; // dB on PAT::Muon -> check example
-    //float mu_dzprim = recoMuon->muonBestTrack()->dz(PV_ite->position());
-#endif
-    // actually not needed
-    //#ifdef CMSSW42X
-    // // tight id always uses main primary vertex and global muon //
-    // float mu_dxyprim = 999.;
-    // float mu_dzprim = 999.;
-    // if (recoMuon->globalTrack().isNonnull()) {
-    //   mu_dxyprim = recoMuon->globalTrack()->dxy(PV_ite->position());
-    //  //float mu_dB = ...; // dB on PAT::Muon -> check example
-    //  mu_dzprim = recoMuon->globalTrack()->dz(PV_ite->position());
-    //}
-    //#endif
-    //float mu_dxyprim = mu_dxy;
-    //float mu_dzprim = mu_dz;
-
     // *** fill this properly ***
     float mu_dB = mu_dxy;
 
@@ -3314,10 +3311,13 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
         if (mu_relPFIsoR04 != -9999.) {
 	  Muon_pfRelIso03_all.push_back(mu_relPFIsoR03);
 	  Muon_pfRelIso04_all.push_back(mu_relPFIsoR04);
+          // temporarily, until have figured out pileup correction 
+          mu_pfIso = int(mu_relPFIsoR03<0.3)+int(mu_relPFIsoR03<0.25)+int(mu_relPFIsoR03<0.2)+int(mu_relPFIsoR03<0.15)+int(mu_relPFIsoR03<0.1)+int(mu_relPFIsoR03<0.05);
         } // if
 	else { // for CMSSW 4-2-8
 	  Muon_pfRelIso03_all.push_back(mu_relIsoR03);
 	  Muon_pfRelIso04_all.push_back(mu_relIsoR05);
+          mu_pfIso = int(mu_relIsoR03<0.3)+int(mu_relIsoR03<0.25)+int(mu_relIsoR03<0.2)+int(mu_relIsoR03<0.15)+int(mu_relIsoR03<0.1)+int(mu_relIsoR03<0.05);
         } // else
 #ifndef CMSSW42X     
 	Muon_pfRelIso03_chg.push_back((recoMuon->pfIsolationR03()).sumChargedHadronPt / recoMuon->pt());
@@ -3327,6 +3327,7 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	// Muon_pfRelIso03_chg.push_back((recoMuon->isolationR03()).hadEt / recoMuon->pt());
 	Muon_pfRelIso03_chg.push_back((recoMuon->isolationR03()).sumPt / recoMuon->pt());
 #endif
+        Muon_pfIsoId.push_back(mu_pfIso);
 	Muon_miniPFRelIso_all.push_back(999.); // *
 	Muon_miniPFRelIso_chg.push_back(999.); // *
 
@@ -3377,7 +3378,11 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
           Muon_geta.push_back(recoMuon->globalTrack()->eta());
           Muon_gphi.push_back(recoMuon->globalTrack()->phi());
         }
-
+        else {
+	  Muon_gpt.push_back(-1.);
+          Muon_geta.push_back(0.);
+          Muon_gphi.push_back(0.);
+        }
         Muon_looseId.push_back(mu_looseId);
 	Muon_softId4.push_back(mu_softId4);
 	Muon_softIdBest.push_back(mu_softIdBest);
@@ -3435,22 +3440,43 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 #endif
 
         // check for associated simulated muon from prestored list
-        bool musimfound = false;
-        for (int im=0; im<nmusim; ++im) {
-          if (recoMuon->charge()==chgmusim[im] && abs(recoMuon->pt()-ptmusim[im])/ptmusim[im] < 0.1 && abs(recoMuon->eta()-etamusim[im])<0.1 && fmod(abs(recoMuon->phi()-phimusim[im]),2.*pi)<0.1) {
+        // bool musimfound = false;
+        int genp_size = GenPart_eta.size();
+        int best_muon_idx = -1;
+        float best_delta_r = 99;
+        for (int im = 0; im < genp_size; ++im) {
+          if (abs(GenPart_pdgId.at(im)) != 13) continue;
+          if (recoMuon->charge() != GenPart_charge.at(im)) continue;
+          float delta_r = deltaR(GenPart_eta.at(im), GenPart_phi.at(im), recoMuon->eta(), recoMuon->phi());
+          //cout << "Calculated deltaR: " << delta_r << endl;
+          if ((delta_r < 0.03) && (delta_r < best_delta_r)) {
+            best_muon_idx = im;
+            best_delta_r = delta_r;
+          }
+        }
+
+        Muon_simIdx.push_back(best_muon_idx);
+        /* cout << "best id: " << best_muon_idx << " best deltaR " << best_delta_r << endl;
+        if (best_muon_idx > -1) {
+          cout << "Reco: Muon pt: " << recoMuon->pt() << " Muon eta: " << recoMuon->eta() << " Muon phi: " << recoMuon->phi() << endl;
+          cout << "Gen : Muon pt: " << GenPart_pt.at(best_muon_idx) << " Muon eta: " << GenPart_eta.at(best_muon_idx) << " Muon phi: " << GenPart_phi.at(best_muon_idx) << endl;
+        } */
+        /* for (int im=0; im<genp_size; ++im) {
+          if (abs(GenPart_pdgId.at(im)) != 13) continue;
+          if (recoMuon->charge()==GenPart_charge.at(im) && abs(recoMuon->pt()-GenPart_pt.at(im))/GenPart_pt.at(im) < 0.1 && abs(recoMuon->eta()-GenPart_eta.at(im))<0.1 && fmod(abs(recoMuon->phi()-GenPart_phi.at(im)),2.*pi)<0.1) {
             musimfound = true;
-            Muon_simIdx.push_back(idmusim[im]);
+            Muon_simIdx.push_back(im);
             break;
           } // if
 	} // im
         if (!musimfound) {
           Muon_simIdx.push_back(-1);
-        } // !musimfound    
+        } // !musimfound  */   
 
        } // nanoext
       } // muon size
       else {
-        cout << "WARNING!!!!! NO. OF Mu IS MORE THAN YOUR RESERVED NO.!!!!!!" << endl;
+	std::cout << "WARNING!!!!! NO. OF Mu IS MORE THAN YOUR RESERVED NO.!!!!!!" << std::endl;
       } // else
 
   } // end of loop recoMuon
@@ -3527,6 +3553,9 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
         temp = Muon_pfRelIso04_all[i1];
         Muon_pfRelIso04_all[i1] = Muon_pfRelIso04_all[i2];
         Muon_pfRelIso04_all[i2] = temp;
+        tempi = Muon_pfIsoId[i1];
+        Muon_pfIsoId[i1] = Muon_pfIsoId[i2];
+        Muon_pfIsoId[i2] = tempi;
         temp = Muon_miniPFRelIso_all[i1];
         Muon_miniPFRelIso_all[i1] = Muon_miniPFRelIso_all[i2];
         Muon_miniPFRelIso_all[i2] = temp;
@@ -3685,521 +3714,33 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
   // cout << "IS MUON LOOP OK? " << nMuon << endl;
   
-  //cout << "hello dimuon" << endl;
-
-  //------------------------------- For Dimu branches -----------------------//
-  nDimu = 0;
-
-  // 1st muon
-  Dimut1_muIdx.clear();
-  Dimut1_dxy.clear();
-  Dimut1_dz.clear();
-
-  // 2nd muon
-  Dimut2_muIdx.clear();
-  Dimut2_dxy.clear();
-  Dimut2_dz.clear();
-
-  // Dimu
-  Dimu_pt.clear();
-  Dimu_eta.clear();
-  Dimu_phi.clear();
-  Dimu_rap.clear();
-  Dimu_mass.clear();
-  Dimu_charge.clear();
-  Dimu_simIdx.clear();
-  Dimu_vtxIdx.clear();
-  Dimu_chi2.clear();
-  Dimu_dlxy.clear();
-  Dimu_dlxyErr.clear();
-  Dimu_dlxySig.clear();
-  Dimu_cosphixy.clear();
-  Dimu_dl.clear();
-  Dimu_dlErr.clear();
-  Dimu_dlSig.clear();
-  Dimu_cosphi.clear();
-  Dimu_ptfrac.clear();
-  Dimu_x.clear();
-  Dimu_y.clear();
-  Dimu_z.clear();
-  Dimu_Covxx.clear();
-  Dimu_Covyx.clear();
-  Dimu_Covzx.clear();
-  Dimu_Covyy.clear();
-  Dimu_Covzy.clear();
-  Dimu_Covzz.clear();
-
-
-  // declare and initialize variables that you want to use for Dimuon only 
-  float vcmu[3] = {0.};
-  float vcDimu[3] = {0.};
-  float vcdimuvtx[3] = {0.};
-
-  int simidDimu = -1; 
-  int vtxidDimu = -1; 
+  // cout << "hello dimuon" << endl;
  
-  float sumptdimu = 0;
-  float zDimu = 0.;
-
-  float rapDimu = 999.;
-  float chi2Dimu = 999.;
-  float dlxyDimu = 0.;
-  float dlxyerrDimu = 0.;
-  float dlxysigDimu = 0.;
-  float cosphixyDimu = 0.;
-  float dlDimu = 0.;
-  float dlerrDimu = 0;
-  float dlsigDimu = 0; 
-  float cosphiDimu = 0;
-  float mDimu = 0.;
-
-  vector<TransientTrack> mytracksforDimu;
-  TransientVertex myDimuVertex;
-
-  int imuvtx =0;
-  float mudistzmin = 999.;
-  int imuvtxmin = -1;
-
-  // tlorentzvector
-  TLorentzVector p4mu1;  
-  p4mu1.SetPtEtaPhiE(0., 0., 0., 0.);
-  TLorentzVector p4mu2;  
-  p4mu2.SetPtEtaPhiE(0., 0., 0., 0.);
-  TLorentzVector p4Dimu;  
-  p4Dimu.SetPtEtaPhiE(0., 0., 0., 0.);
-
-  reco::VertexCollection::const_iterator iteForDimu;
-  reco::VertexCollection::const_iterator itemumin;
-
-
-////////////////////////////////////////////////////////////////////////////
-// List of cuts or selections applied to Dimuon candidates                //
-////////////////////////////////////////////////////////////////////////////
-  UInt_t muminDimu = 2;     // minimum number of tracks for Dimuon
-  float detamax = 3.; 
-  // WorkBook: For matching, vertices & track origins should be separated by 
-  // at most 1 mm and at most 3 sigma; 
-  // here we use 1 mm only throughout, from a previous empirical study,
-  // and since we want to associate also close secondaries
-  // *** this does not seem to work for secondary vertices! ***
-  // -> increase to 5 mm! 
-  Float_t vdimu_xymax = 0.5; // maximum track distance in xy for mu1 and mu2 
-  Float_t vdimu_zmax = 0.5; // maximum track distance in z for mu1 and mu2
-  Float_t vdimutrksum_xymax = 0.5; // maximum vertex distance in xy for ptfrac
-  Float_t vdimutrksum_zmax = 0.5;  // maximum vertex distance in z for ptfrac
-  Float_t muvdistzmax = 0.5; // maximum distance from primary vertex
-  Float_t mucosphimin = -1.; // minimum cosphi of dimuon (no cut)
-
-  // *** need to define parameter and protect! ***
-  uint imupoint[1000];
-
-  // check for muon collection with at least 2 entries 
-  if (nMuon >= muminDimu) {
-    
-    // create dimuon pair from each stored (unlike sign?) muon combination
-    // with delta eta < 3 (exclude forward/backward configurations)
-    //
-    // create a list of prestored pointers
-
-    // preset with -1 
-    for (uint imu = 0; imu<b4_nMuon; ++imu) {
-      imupoint[imu] = -1;
-    }  
-    // fill with proper pointers (MuId contains place in original list)
-    for (uint imu = 0; imu<nMuon; ++imu) {
-      imupoint[Muon_Id[imu]] = imu;
-    }  
-
-    // cout << "1st MUON LOOP " << nMuon << endl;
-
-    //---------- 1st loop over muons -----------//
-  int muonid1 = -1;
-#ifndef miniAOD
-  for (reco::MuonCollection::const_iterator recoMuon1 = muons->begin(); recoMuon1 != muons->end(); ++recoMuon1) {
-#endif
-#ifdef miniAOD
-  for (pat::MuonCollection::const_iterator recoMuon1 = muons->begin(); recoMuon1 != muons->end(); ++recoMuon1) {
-#endif
-    ++muonid1;
-    int muindex1 = imupoint[muonid1];
-    if (muindex1 < 0) continue;
-    float mu1dxy = 0;
-    float mu1dz = 0;
-
-    // put cuts on first muon here (none for the time being)
-
-    // cout << "2nd MUON LOOP " << muonid1 << endl;
-
-    //------ 2nd loop over muons  ------------//
-    // loop over each pair only once;
-    int muonid2 = muonid1;
-#ifndef miniAOD
-    for (reco::MuonCollection::const_iterator recoMuon2 = recoMuon1; recoMuon2 != muons->end(); ++recoMuon2) {
-#endif
-#ifdef miniAOD
-    for (pat::MuonCollection::const_iterator recoMuon2 = recoMuon1; recoMuon2 != muons->end(); ++recoMuon2) {
-#endif
-      // don't fit track with itself
-      if (recoMuon1 == recoMuon2) continue;
-      ++muonid2;
-      int muindex2 = imupoint[muonid2];
-      if (muindex2 < 0) continue;
-      float mu2dxy = 0;
-      float mu2dz = 0;
-          
-      // apply cuts
-      //cout << "check FW " << muonid2 << endl; 
-      // don't accept extreme forward backward pairs
-      if (abs(Muon_eta[muindex1]-Muon_eta[muindex2]) > detamax) continue;
-      //cout << "check sign" << endl; 
-      // accept only unlike sign pairs -> now accept also like sign
-      // if (Muon_charge[muindex1]*Muon_charge[muindex2]>0) continue;
-      int chargeDimu = Muon_charge[muindex1] + Muon_charge[muindex2]; 
-
-      //cout << "check origin" << endl; 
-      // calculate track origin separations in x, y and z
-      vcmu[0] = abs(recoMuon1->vx() - recoMuon2->vx());
-      vcmu[1] = abs(recoMuon1->vy() - recoMuon2->vy());
-      vcmu[2] = abs(recoMuon1->vz() - recoMuon2->vz());
-
-      // check they are separated at most by a radius of 1mm
-      // in x and y and a distance of 0.1 in z
-      // *** this seems to be too tight! ***
-      if (sqrt ((vcmu[0] * vcmu[0]) + (vcmu[1] * vcmu[1])) > vdimu_xymax || vcmu[2] > vdimu_zmax) continue;
-		  
-      // build Dimu track collection for revertexing
-      mytracksforDimu.clear();
-      // build transient tracks from relevant (mini)AOD tracks
-      TransientTrack  transientTrack1 = theB->build( recoMuon1->bestTrack() );
-      mytracksforDimu.push_back(transientTrack1);
-      TransientTrack  transientTrack2 = theB->build( recoMuon2->bestTrack() );
-      mytracksforDimu.push_back(transientTrack2); 
-
-      //cout << "dimuon fit " << muonid1 << " " << muonid2 << endl;
-
-//////////////////////////////////////////////////////////////////////////////
-///////////////// Do the dimuon vertex refit /////////////////////////////////
-      // allow track parameter reevaluation 
-      // (Twiki: currently only the KalmanVertex can do this)
-      KalmanVertexFitter  theFitter2m(true);
-      // do the fit
-      myDimuVertex = theFitter2m.vertex(mytracksforDimu);  
-      if (!myDimuVertex.isValid()) continue;
-
-      //cout << "after dimuon fit " << muonid1 << " " << muonid2 << endl;
-
-      // keep this combination
-      // store pointers ...
-
-      // vertex parameters
-      float ndof = myDimuVertex.degreesOfFreedom();
-      // for Adaptive Vertex Fitter this sum of weights*2-3
-      // for Kalman Vertex Fitter this is 1 for two tracks?
-      chi2Dimu = myDimuVertex.totalChiSquared();
-      // confidence level
-      float CL=999.;
-      if (ndof >= 1) {
-        CL = TMath::Prob(chi2Dimu,(int)ndof); 
-      }
-      // cut on chisquared (Adaptive) or CL (Kalman) here?
-      if (CL<0.01) continue;
-
-      double Dimux = 0, Dimuy=0, Dimuz=0;
-      double cov_sv[3][3], cov_pv[3][3], deriv[3];
-      double dlerr = 0, dlxyerr=0;
-
-      // good vertex, get position
-      Dimux = myDimuVertex.position().x();
-      Dimuy = myDimuVertex.position().y();
-      Dimuz = myDimuVertex.position().z();
-
-      // track parameters
-      if (myDimuVertex.hasRefittedTracks()){
-        // refitted tracks are TransientTracks
-        // get updated momenta of refitted tracks
-        // and recalculate muon and dimuon quantities 
-        int itcount = 0;
-        vector<TransientTrack> tracks = myDimuVertex.refittedTracks();
-        for (vector<TransientTrack>::const_iterator trackIt = tracks.begin(); trackIt != tracks.end(); ++trackIt) {
-          ++itcount;
-          const Track & track = trackIt->track();
-          if (itcount==1) {
-            p4mu1.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), mumass);
-          }
-	  else if (itcount==2) { 
-            p4mu2.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), mumass);
-          }		              
-        } //for
-
-	// get four-vector, and from this dimuon pt, eta, phi, and mass 
-	p4Dimu = p4mu1 + p4mu2;
-        // investigate cut on momentum asymmetry (costheta*)?
-        // (instead of Delta eta above)
-	mDimu = p4Dimu.M();
-
-        //cout << "dimuon mass: " << mDimu << endl;
-
-        //cout << "Track pt: " << track.pt() << endl;
-        //cout << recmuon1->pt() << " " << recmuon2->pt() << endl;
-      } //if 
-
-      // roughly locate Dimu 'vertex' using average coordinate of tracks
-      vcDimu[0] = 0.5 * (recoMuon1->vx() + recoMuon2->vx());
-      vcDimu[1] = 0.5 * (recoMuon1->vy() + recoMuon2->vy());
-      vcDimu[2] = 0.5 * (recoMuon1->vz() + recoMuon2->vz());
-
-////////////////////// find best (closest) primary vertex /////////////////////
-
-      // loop over primary vertices
-      // imuvtx sets vertex index = unique id
-      imuvtx=-1;
-      mudistzmin=999.;
-      imuvtxmin=-1;
-      vtxidDimu=-1;
-
-      for (reco::VertexCollection::const_iterator ite = Primvertex->begin(); ite != Primvertex->end(); ++ite) {
-        ++imuvtx;
-
-        // get vertex distance in z
-        float distz = fabs(ite->z()-Dimuz);
-        // skip if too far away
-        if (distz > muvdistzmax) continue;
-        // should we apply quality cuts?
-        if (ite->isFake() ||ite->ndof()<2 || fabs(ite->z()-Bsp_z)>20.) continue;
-        //if (ite->isFake() || !ite->isValid() ||
-        //    ite->ndof()<2 || fabs(ite->z()-Bsp_z)>20.) continue;
-        // isFake means beam spot, isValid means fit converged
-        // and result is within tracker boundaries (always true?), 
-        // the last two are essentially no cut;
-        // (ndof>4 for PVtx_isGood means >2 tracks)
-        // use PVtx variables to cut harder offline if wished
-
-        // save for later if closer than closest good vertex so far
-        if (distz < mudistzmin) {
-          mudistzmin = distz;
-          imuvtxmin = imuvtx;
-          itemumin = ite;
-	  //cout << "imuvtxmin " << imuvtxmin << " distz " << distz << endl;
-        }
-
-        // find out how to check track-vertex association ...
-      }
-
-      // no vertex was directly associated to either track,
-      // use closest if found
-      if (imuvtxmin >-1) {
-        iteForDimu = itemumin;
-        vtxidDimu = imuvtxmin;
-      }
-      else {
-        // no vertex associated, skip candidate
-        // (beware of exclusive J/psis, do they always make a vertex?)
-        continue;
-      }
-      // for 'direct' candudates, should the dimuon vertex be refitted 
-      // with vertex and/or beamspot constraint? 
-
-
-      // found 'best' primary for this vertex
-      // get position
-      double xprim = iteForDimu->position().x(); 
-      double yprim = iteForDimu->position().y(); 
-      double zprim = iteForDimu->position().z();
-      // calculate distance of tracks to primary
-      // set primary vertex reference point pvdimu
-      math::XYZPoint pvdimu(iteForDimu->position());
-      mu1dxy = recoMuon1->bestTrack()->dxy(pvdimu); 
-      mu1dz = recoMuon1->bestTrack()->dz(pvdimu); 
-      mu2dxy = recoMuon2->bestTrack()->dxy(pvdimu); 
-      mu2dz = recoMuon2->bestTrack()->dz(pvdimu); 
-      // *** rather call it1->dxy(iteForD0)? (see mu_dxy) ***
-      // t1dxy = sqrt((it1->vx()-xprim)*(it1->vx()-xprim)
-      //	 + (it1->vy()-yprim)*(it1->vy()-yprim));
-      // t1dz = it1->vz()-zprim; 
-      // t2dxy = sqrt((it2->vx()-xprim)*(it2->vx()-xprim)
-      //	 + (it2->vy()-yprim)*(it2->vy()-yprim));
-      // t2dz = it2->vz()-zprim; 
-      // calculate distance of Dimu to primary
-      double vdx = Dimux - xprim;
-      double vdy = Dimuy - yprim;
-      double vdz = Dimuz - zprim; 
-      double dist = sqrt(pow(vdx,2) + pow(vdy,2) + pow(vdz,2));
-      double distxy = sqrt(pow(vdx,2) + pow(vdy,2));
-      // get direction vector 
-      double Dpx = p4Dimu.Px(); 
-      double Dpy = p4Dimu.Py();
-      double Dpz = p4Dimu.Pz();
-      double Dp  = p4Dimu.P();
-      double Dpt  = p4Dimu.Pt();
-      // calculate 3D and 2D decay length
-      dlDimu = (Dpx*vdx + Dpy*vdy + Dpz*vdz)/Dp;
-      dlxyDimu = (Dpx*vdx + Dpy*vdy)/Dpt;
-      // calculate cosphi
-      cosphiDimu = dlDimu/dist;
-      cosphixyDimu = dlxyDimu/distxy;
-      // cut on cosphi (0.99)
-      dlerrDimu=0;
-      dlsigDimu=0;
-      dlxyerrDimu=0;
-      dlxysigDimu=0;
-      if (cosphiDimu > mucosphimin) {
-        // calculate significance in space
-        // transient Dimu vertex
-	cov_sv[0][0] = myDimuVertex.positionError().cxx();
-	cov_sv[1][0] = myDimuVertex.positionError().cyx();
-	cov_sv[2][0] = myDimuVertex.positionError().czx();
-        cov_sv[0][1] = cov_sv[1][0];
-	cov_sv[1][1] = myDimuVertex.positionError().cyy();
-	cov_sv[2][1] = myDimuVertex.positionError().czy();
-        cov_sv[0][2] = cov_sv[2][0];
-        cov_sv[1][2] = cov_sv[2][1];
-	cov_sv[2][2] = myDimuVertex.positionError().czz();
-        // primary vertex
-	cov_pv[0][0] = iteForDimu->covariance(0,0);
-	cov_pv[1][0] = iteForDimu->covariance(1,0);
- 	cov_pv[2][0] = iteForDimu->covariance(2,0);
-        cov_pv[0][1] = cov_pv[1][0];
-	cov_pv[1][1] = iteForDimu->covariance(1,1);
-	cov_pv[2][1] = iteForDimu->covariance(2,1);
-        cov_pv[0][2] = cov_pv[2][0];
-        cov_pv[1][2] = cov_pv[2][1];
-	cov_pv[2][2] = iteForDimu->covariance(2,2);
-        // distance direction unit vector
-        deriv[0] = vdx/dist;
-        deriv[1] = vdy/dist;
-        deriv[2] = vdz/dist;
-        // decay length error
-        dlerr=0;
-        for (int m=0; m<3; ++m){
-          for (int n=0; n<3; ++n){
-            dlerr += deriv[m]*deriv[n]*(cov_pv[m][n]+cov_sv[m][n]);
-	  } // end for
-	} // end for
-	dlerrDimu = sqrt(dlerr);
-	// decay length significance
-        dlsigDimu = dlDimu/dlerrDimu;
-
-        // decay length error in xy
-        dlxyerr=0;
-        for (int m=0; m<2; ++m){
-          for (int n=0; n<2; ++n){
-            dlxyerr += deriv[m]*deriv[n]*(cov_pv[m][n]+cov_sv[m][n]);
-	  } // end for
-	} // end for
-	dlxyerrDimu = sqrt(dlxyerr);
-	// decay length significance
-        dlxysigDimu = dlxyDimu/dlxyerrDimu;
-     
-      } // end of cosphi cut
-
-      // calculate dimuon rapidity
-      //rapDimu = log((sqrt(p4Dimu.M()*p4Dimu.M()+p4Dimu.P()*p4Dimu.P())+p4Dimu.Pz())/(sqrt(mD0Actual*mD0Actual+p4D012.P()*p4D012.P())-p4D012.Pz()))/2.;
-      rapDimu = log((p4Dimu.E()+p4Dimu.Pz())/(p4Dimu.E()-p4Dimu.Pz()))/2.;
-
-      // calculate Dimuon momentum fraction
-      sumptdimu = 0;
-      // loop over all tracks
-#ifndef miniAOD
-      // loop over AOD track collection
-      for (reco::TrackCollection::const_iterator itSum1 = tracks->begin(); itSum1 != tracks->end(); ++itSum1) {
-#endif
-#ifdef miniAOD
-      // loop over miniAOD PackedCandidates with full track info
-      // (some low pt tracks will be missed)
-      for (pat::PackedCandidateCollection::const_iterator icSum1 = tracks->begin(); icSum1 != tracks->end(); ++icSum1) {
-	if (!(icSum1->hasTrackDetails())) continue;
-        auto itSum1 = icSum1->bestTrack();
-        if (itSum1 == nullptr) continue; 
-#endif
-	// check track origins
-	vcdimuvtx[0] = abs(vcDimu[0] - itSum1->vx());
-	vcdimuvtx[1] = abs(vcDimu[1] - itSum1->vy());
-	vcdimuvtx[2] = abs(vcDimu[2] - itSum1->vz());
-		
-	if ((sqrt(vcdimuvtx[0] * vcdimuvtx[0]) + (vcdimuvtx[1] * vcdimuvtx[1])) < vdimutrksum_xymax && vcdimuvtx[2] < vdimutrksum_zmax) {
-							
-	  sumptdimu += abs(itSum1->pt()); // sum pt for all tracks
-	} // end of Sumpt vertex check
-      } // end of itSum loop
-
-      // will be slightly different for AOD and miniAOD
-      // use bestTrack pt since innerTrack pt does not always exist
-      // so this variable can technically be > 1
-      //zDimu = (recoMuon1->innerTrack()->pt() + recoMuon2->innerTrack()->pt()) / sumptdimu;
-      zDimu = (recoMuon1->bestTrack()->pt() + recoMuon2->bestTrack()->pt()) / sumptdimu;
-
-
-      // fill ntuple variables
-      if (Dimu_pt.size() < nReserve_Dimu) {
-
-        Dimut1_muIdx.push_back(muindex1);
-        Dimut1_dxy.push_back(mu1dxy);
-        Dimut1_dz.push_back(mu1dz);
-        Dimut2_muIdx.push_back(muindex2);
-        Dimut2_dxy.push_back(mu2dxy);
-        Dimut2_dz.push_back(mu2dz);
-
-        // Dimu
-        Dimu_pt.push_back(p4Dimu.Pt());
-        Dimu_eta.push_back(p4Dimu.Eta());
-        Dimu_phi.push_back(p4Dimu.Phi());
-        Dimu_rap.push_back(rapDimu);
-        Dimu_mass.push_back(mDimu);
-        Dimu_charge.push_back(chargeDimu);
-        Dimu_simIdx.push_back(simidDimu);
-        Dimu_vtxIdx.push_back(vtxidDimu);
-        Dimu_chi2.push_back(chi2Dimu);
-        Dimu_dlxy.push_back(dlxyDimu);
-        Dimu_dlxyErr.push_back(dlxyerrDimu);
-        Dimu_dlxySig.push_back(dlxysigDimu);
-        Dimu_cosphixy.push_back(cosphixyDimu);
-        Dimu_dl.push_back(dlDimu);
-        Dimu_dlErr.push_back(dlerrDimu);
-        Dimu_dlSig.push_back(dlsigDimu);
-	Dimu_cosphi.push_back(cosphiDimu);
-	Dimu_ptfrac.push_back(zDimu);
-	Dimu_x.push_back(Dimux);
-	Dimu_y.push_back(Dimuy);
-	Dimu_z.push_back(Dimuz);
-	Dimu_Covxx.push_back(cov_sv[0][0]);
-	Dimu_Covyx.push_back(cov_sv[1][0]);
-	Dimu_Covzx.push_back(cov_sv[2][0]);
-	Dimu_Covyy.push_back(cov_sv[1][1]);
-	Dimu_Covzy.push_back(cov_sv[2][1]);
-	Dimu_Covzz.push_back(cov_sv[2][2]);
-      }
-      else {cout << "WARNING!!!!! NO. OF Dimu IS MORE THAN YOUR RESERVED NO.!!!!!!" << endl;}
-      nDimu = Dimu_pt.size();
-
-    } // for muon 2
-  } // for muon 1 
-} // if nMuon
-
-
+// add refitted dimuon candidates (nonstandard extension)
+#include "NanoDimu.cc.forinclude"
 
 //////////////////////////////////////////////////////////////////////////////
 ////////////////////////////// Muon Collection End ///////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 
-    //cout << "hello electron" << endl; 
+  // cout << "hello electron" << endl; 
 
 //////////////////////////////////////////////////////////////////////////////
 //////////// Electron, Photon, Tau, MET and Jet collections //////////////////
 //////////////////////////////////////////////////////////////////////////////
 
 // Electrons
-//  Handle<GsfElectronCollection> electrons;
-//  iEvent.getByLabel(InputTag("gsfElectrons"), electrons);
-
+/* 
 // number of electrons already Ok, but order seemingly not -> reorder
   value_el_n = 0;
   Electron_nNano = 0;
-  // H4lepton
-  misshits = -9999;
-  IP3d_e = -9999.;
-  ErrIP3d_e = -9999.;
-  SIP3d_e = -9999.;
-  relPFIso_e = -9999.;
+
+  //int misshits = -9999;
+  double IP3d_e = -9999.;
+  double ErrIP3d_e = -9999.;
+  double SIP3d_e = -9999.;
+  //double relPFIso_e = -9999.;
+  int elecid = -1;
   
   //"official" cut
   float el_min_pt = 5;
@@ -4213,12 +3754,9 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 #ifdef miniAOD
   for (pat::ElectronCollection::const_iterator it = electrons->begin(); it != electrons->end(); ++it) {
 #endif
+    ++elecid;
 
-    // H4lepton
-    //**************************** Part for H->4l start ******************************//
-    // This section is dedicated to plot histograms of some vars before cuts
-    // might be deleted after H->4l example comparison finished
-    // (beware, some of the variables defined here are also used elsewere)
+    // calculate variables
 
 #ifndef CMSSW42X 
     // satisfies isPFcand   
@@ -4228,36 +3766,21 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 #ifndef CMSSW7plus
 	// I need to define some vars before cut
         // see https://twiki.cern.ch/twiki/bin/view/CMSPublic/EgammaPublicData
-	misshits = ((it->gsfTrack())->trackerExpectedHitsInner()).numberOfHits();
+	//misshits = ((it->gsfTrack())->trackerExpectedHitsInner()).numberOfHits();
 #endif
 	IP3d_e = sqrt ( (it->gsfTrack()->dxy(pv) * it->gsfTrack()->dxy(pv)) + (it->gsfTrack()->dz(pv) * it->gsfTrack()->dz(pv)) );
 	ErrIP3d_e = sqrt ( (it->gsfTrack()->d0Error() * it->gsfTrack()->d0Error()) + (it->gsfTrack()->dzError() * it->gsfTrack()->dzError()) );
 	SIP3d_e = IP3d_e / ErrIP3d_e;
     
 #ifdef CMSSW53X    
-	relPFIso_e = ((it->pfIsolationVariables()).chargedHadronIso +
-		      (it->pfIsolationVariables()).neutralHadronIso +
-		      (it->pfIsolationVariables()).photonIso) /it->pt();
+	//relPFIso_e = ((it->pfIsolationVariables()).chargedHadronIso +
+	//	      (it->pfIsolationVariables()).neutralHadronIso +
+	//	      (it->pfIsolationVariables()).photonIso) /it->pt();
 #endif
-    
-	// save hist for all vars b4 cut in HiggsDemoAnalyzer
-	h_SIP3d_e_b4->Fill(SIP3d_e);
-	h_p_e->Fill(it->p());
-	h_et_e->Fill(it->et());
-	h_pt_e_b4->Fill(it->pt());
-	h_eta_e_b4->Fill(it->eta());
-	h_phi_e->Fill(it->phi());
-	h_sc_eta->Fill((it->superCluster())->eta());
-	h_sc_rawE->Fill(std::abs((it->superCluster())->rawEnergy()));
-	h_misshite->Fill(misshits);   
-	h_relPFIso_e->Fill(relPFIso_e);
-	h_relPFIso_pt_e->Fill(relPFIso_e, it->pt());
-	h_dxy_e->Fill((it->gsfTrack())->dxy(pv));
 #ifndef CMSSW42X    
       }
 #endif
-    //**************************** Part for H->4l end ********************************//     
-    
+
     value_el_isNano[value_el_n] = false;
     if (it->pt() > el_min_pt) {
       if (it->pt() > 5) {
@@ -4382,9 +3905,15 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       // Copy paste the def in: https://github.com/cms-sw/cmssw/blob/CMSSW_9_4_X/PhysicsTools/PatAlgos/plugins/PATElectronProducer.cc
       // set conversion veto selection
       bool passconversionveto = false;
+#ifndef miniAOD
       if (hConversions.isValid()) {
 	// this is recommended method
+#ifdef CMSSW106plus
+        // argument type has changed
 	passconversionveto = !ConversionTools::hasMatchedConversion( *it, *hConversions, beamSpotHandle->position());
+#else
+	passconversionveto = !ConversionTools::hasMatchedConversion( *it, hConversions, beamSpotHandle->position());
+#endif
       } else {
 	// use missing hits without vertex fit method
 #ifndef CMSSW7plus
@@ -4394,6 +3923,7 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	passconversionveto = it->gsfTrack()->hitPattern().numberOfLostHits(reco::HitPattern::MISSING_INNER_HITS) < 1;
 #endif	
       }
+#endif
       value_el_convVeto[value_el_n] = passconversionveto;
 	
       // *** recheck the following ***
@@ -4427,6 +3957,23 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
       // auto trk = it->gsfTrack();
       // see https://twiki.cern.ch/twiki/bin/view/CMSPublic/EgammaPublicData
+      value_el_x[value_el_n] = it->gsfTrack()->vx();
+      value_el_y[value_el_n] = it->gsfTrack()->vy();
+      value_el_z[value_el_n] = it->gsfTrack()->vz();
+      value_el_vtxIdx[value_el_n] = -1;
+      for (int ele = 0; ele<neleclist; ++ele) {
+        if (elecid == elid[ele]) {
+          // set primary vertex reference point bestpv
+          bestpv.SetXYZ(elpvx[ele],elpvy[ele],elpvz[ele]);
+          // fill distance
+          //el_dxyBest = it->gsfTrack()->dxy(bestpv);
+          //el_dzBest = it->gsfTrack()->dz(bestpv);
+          value_el_vtxIdx[value_el_n] = elvtx[ele];
+          //el_bestflag = 0;
+          //break;    // candidate found -> stop loop
+        } //if  elecid
+      } // for ee
+
       value_el_dxy[value_el_n] = it->gsfTrack()->dxy(pv);
       // value_el_dxy[value_el_n] = trk->dxy(pv) * it->charge();
       // if (it->phi()<0) value_el_dxy[value_el_n] = -value_el_dxy[value_el_n];
@@ -4643,7 +4190,7 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       }
       else {
         // this should not happen
-        cout << "NanoAnalyzer: Electron cluster outside bound" << endl; 
+	std::cout << "NanoAnalyzer: Electron cluster outside bound" << std::endl; 
 	eisTight = false;
 	eisMedium = false;
 	eisLoose = false;
@@ -4658,7 +4205,7 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
       ++value_el_n;
       if (int(value_el_n) >= max_el) {
-        cout << "NanoAnalyzer: max_el exceeded" << endl;
+	std::cout << "NanoAnalyzer: max_el exceeded" << std::endl;
         continue;
       }
 
@@ -4816,6 +4363,19 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
         value_el_cutBased[i2] = tempi;    
         //cout << value_el_cutBased[i1] << " " << value_el_cutBased[i2] << endl;
 
+        temp = value_el_x[i1];
+        value_el_x[i1] = value_el_x[i2];
+        value_el_x[i2] = temp;    
+        temp = value_el_y[i1];
+        value_el_y[i1] = value_el_y[i2];
+        value_el_y[i2] = temp;    
+        temp = value_el_z[i1];
+        value_el_z[i1] = value_el_z[i2];
+        value_el_z[i2] = temp;    
+        tempi = value_el_vtxIdx[i1];
+        value_el_vtxIdx[i1] = value_el_vtxIdx[i2];
+        value_el_vtxIdx[i2] = tempi;    
+
         temp = value_el_dxy[i1];
         value_el_dxy[i1] = value_el_dxy[i2];
         value_el_dxy[i2] = temp;    
@@ -4839,16 +4399,13 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     }
   }
 
-  //cout << "hello tau" << endl; 
+  // cout << "hello tau" << endl; 
 
   // Taus
 
   // to be fully implemented as indicated in 
   // https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuidePFTauID#4XX
   //                                                               53X
-
-  //Handle<PFTauCollection> taus;
-  //iEvent.getByLabel(InputTag("hpsPFTauProducer"), taus);
 
   const float tau_min_pt = 15;
   value_tau_n = 0;
@@ -4872,17 +4429,15 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 #endif
       ++value_tau_n;
       if (int(value_tau_n) >= max_tau) {
-        cout << "NanoAnalyzer: max_tau exceeded" << endl;
+	std::cout << "NanoAnalyzer: max_tau exceeded" << std::endl;
         continue;
       }
     }
   }
 
-  //cout << "hello photon" << endl; 
+  // cout << "hello photon" << endl; 
 
   // Photons
-  //Handle<PhotonCollection> photons;
-  //iEvent.getByLabel(InputTag("photons"), photons);
 
   value_ph_n = 0;
   const float ph_min_pt = 5;
@@ -4902,17 +4457,16 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       value_ph_pfreliso03all[value_ph_n] = it->ecalRecHitSumEtConeDR03();
       ++value_ph_n;
       if (int(value_ph_n) >= max_ph) {
-        cout << "NanoAnalyzer: max_ph exceeded" << endl;
+	std::cout << "NanoAnalyzer: max_ph exceeded" << std::endl;
         continue;
       }
     }
   }
 
-  //cout << "hello MET" << endl; 
+  // cout << "hello MET" << endl; 
 
   // MET
-  //Handle<PFMETCollection> met;
-  //iEvent.getByLabel(InputTag("pfMet"), met);
+
   value_met_pt = met->begin()->pt();
   value_met_phi = met->begin()->phi();
   value_met_sumEt = met->begin()->sumEt();
@@ -4920,11 +4474,11 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   if (value_met_sumEt == 0 || value_met_sumEt > 0.001)
     value_met_significance = met->begin()->significance();
   else {
-    cout << "missing pt/ET: " << value_met_pt << " " << value_met_sumEt << endl;
-    cout << "nanoAnalyzer: MET significance set to 0 to avoid singular matrix" << endl; 
+    std::cout << "missing pt/ET: " << value_met_pt << " " << value_met_sumEt << std::endl;
+    std::cout << "nanoAnalyzer: MET significance set to 0 to avoid singular matrix" << std::endl; 
     value_met_significance = 0.;
   }
-  //cout << "hello MET 3" << endl; 
+  // cout << "hello MET 3" << endl; 
 #ifdef CMSSW53X
   auto cov = met->begin()->getSignificanceMatrix();
   value_met_covxx = cov[0][0];
@@ -4936,7 +4490,7 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   value_met_covyy = 0;
 #endif
 
-  //cout << "hello caloMET" << endl; 
+  // cout << "hello caloMET" << endl; 
 
   // caloMET
 #ifndef miniAOD
@@ -4950,12 +4504,15 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   value_calomet_sumEt = calomet->front().caloMETSumEt();
 #endif
 
-  //cout << "hello Jet" << endl; 
+  // cout << "hello Jet" << endl; 
 
   // Jets
-  //Handle<PFJetCollection> jets;
-  //iEvent.getByLabel(InputTag("ak5PFJets"), jets);
 
+////////////////////////////////////////////////////////
+
+#ifndef noJetCor
+  const JetCorrector* corrector = JetCorrector::getJetCorrector(mJetCorr, iSetup);
+#endif
   const float jet_min_pt = 15;
   value_jet_n = 0;
   // for (auto it = jets->begin(); it != jets->end(); ++it) {
@@ -4966,12 +4523,49 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     for (pat::JetCollection::const_iterator it = jets->begin(); it != jets->end(); ++it) {
 #endif 
     if (it->pt() > jet_min_pt) {
-      value_jet_pt[value_jet_n] = it->pt();
+      // note that pt cut is applied to uncorrected jets
+      value_jet_ptuncor[value_jet_n] = it->pt();
       value_jet_eta[value_jet_n] = it->eta();
       value_jet_phi[value_jet_n] = it->phi();
       value_jet_mass[value_jet_n] = it->mass();
 
+      // cout << value_jet_n << " jet pt " << value_jet_pt[value_jet_n] << endl;
+
+#ifndef noJetCor
+      // do the jet corrections (if not turned off by #define noJetCor)
+
+#ifdef CMSSW42X
+// https://github.com/cms-sw/cmssw/blob/CMSSW_4_2_X/JetMETCorrections/Objects/interface/JetCorrector.h (lines 36-39)
+// https://kmishra.net/talks/2012/CMSDAS_IntroTalk_2012-1.pdf (slide 17)
+
+      int ijet = it - jets->begin();
+      edm::RefToBase<reco::Jet> jetRef(edm::Ref<reco::PFJetCollection>(jets,ijet));
+      double jec = corrector->correction(*it, jetRef, iEvent, iSetup);
+#else
+// https://github.com/cms-sw/cmssw/blob/master/JetMETCorrections/Objects/interface/JetCorrector.h (line 33)
+
+      double jec = corrector->correction(*it, iEvent, iSetup);
+#endif
+      // copy original (uncorrected) jet;
+      reco::PFJet corjet = *it;
+      // apply JEC
+      corjet.scaleEnergy(jec);
+
+//      cout<<jec<<" "<<it->pt()<<" "<<corjet.pt()<<endl;
+
+      value_jet_pt[value_jet_n] = corjet.pt();
+
+#else
+
+      value_jet_pt[value_jet_n] = it->pt();
+
+#endif
+
+#ifdef miniAOD
+      int pfConstituents = 0;
+#else
       int pfConstituents = it->getPFConstituents().size();
+#endif */
       // quark-gluon separator (not yet working)
 /*      double ptD = 0, pfqt2 = 0, pfqt = 0;
       for (int ii = 0; ii < pfConstituents; ii ++) {
@@ -4998,7 +4592,7 @@ cout<<"neHEF: "<<it->neutralHadronEnergyFraction()<<endl;
 
 cout<<"muEF: "<<it->muonEnergyFraction()<<endl;
 cout<<"---------------------------------"<<endl;*/
-
+/* 
 //
 //      value_jet_ptD[value_jet_n] = ptD;
       value_jet_area[value_jet_n] = it->jetArea();
@@ -5009,14 +4603,168 @@ cout<<"---------------------------------"<<endl;*/
       value_jet_chHEF[value_jet_n] = it->chargedHadronEnergyFraction();
       value_jet_neEmEF[value_jet_n] = it->neutralEmEnergyFraction();
       value_jet_neHEF[value_jet_n] = it->neutralHadronEnergyFraction();
-
+      value_jet_CEMF[value_jet_n] = it->chargedEmEnergyFraction();
+      value_jet_MUF[value_jet_n] = it->muonEnergyFraction();
+      value_jet_NumConst[value_jet_n] = it->chargedMultiplicity()+it->neutralMultiplicity(); 
+      value_jet_CHM[value_jet_n] = it->chargedMultiplicity();
+      bool looseJetID = (value_jet_neHEF[value_jet_n]<0.99 && value_jet_neEmEF[value_jet_n]<0.99 && value_jet_NumConst[value_jet_n]>1) && ((abs(value_jet_eta[value_jet_n])<=2.4 && value_jet_chHEF[value_jet_n]>0 && value_jet_CHM[value_jet_n]>0 && value_jet_CEMF[value_jet_n]<0.99) || abs(value_jet_eta[value_jet_n])>2.4);
+      bool looseLepVetoJetID = (value_jet_neHEF[value_jet_n]<0.99 && value_jet_neEmEF[value_jet_n]<0.99 && value_jet_NumConst[value_jet_n]>1 && value_jet_MUF[value_jet_n]<0.8) && ((abs(value_jet_eta[value_jet_n])<=2.4 && value_jet_chHEF[value_jet_n]>0 && value_jet_CHM[value_jet_n]>0 && value_jet_CEMF[value_jet_n]<0.99) || abs(value_jet_eta[value_jet_n])>2.4);
+      bool tightJetID = (value_jet_neHEF[value_jet_n]<0.9 && value_jet_neEmEF[value_jet_n]<0.9 && value_jet_NumConst[value_jet_n]>1) && ((abs(value_jet_eta[value_jet_n])<=2.4 && value_jet_chHEF[value_jet_n]>0 && value_jet_CHM[value_jet_n]>0 && value_jet_CEMF[value_jet_n]<0.9) || abs(value_jet_eta[value_jet_n])>2.4);
+      bool tightLepVetoJetID = (value_jet_neHEF[value_jet_n]<0.9 && value_jet_neEmEF[value_jet_n]<0.9 && value_jet_NumConst[value_jet_n]>1 && value_jet_MUF[value_jet_n]<0.8) && ((abs(value_jet_eta[value_jet_n])<=2.4 && value_jet_chHEF[value_jet_n]>0 && value_jet_CHM[value_jet_n]>0 && value_jet_CEMF[value_jet_n]<0.9) || abs(value_jet_eta[value_jet_n])>2.4);
+      int jetid = looseJetID*1+tightJetID*2+tightLepVetoJetID*4+looseLepVetoJetID*8;
+      //cout<<"value_jet_n = "<<value_jet_n<<endl;
+      //cout<<"looseJetID = "<<looseJetID<<" tightJetID = "<<tightJetID<<" jetid = "<<jetid<<endl;
+      value_jet_id[value_jet_n] = jetid;   
+      //cout<<looseJetID<<endl;
+      //float NHF = it->neutralHadronEnergyFraction();
+ */
+      /*
+      float NEMF = it->neutralEmEnergyFraction();
+      float CHF = it->chargedHadronEnergyFraction();
+      float MUF = it->muonEnergyFraction();
+      float CEMF = it->chargedEmEnergyFraction();
+      float NumConst = it->chargedMultiplicity()+it->neutralMultiplicity();
+      float CHM = it->chargedMultiplicity();
+       
+      bool looseJetID = (NHF<0.99 && NEMF<0.99 && NumConst>1 && MUF<0.8) && ((abs(eta)<=2.4 && CHF>0 && CHM>0 && CEMF<0.99) || abs(eta)>2.4);
+      bool tightJetID = (NHF<0.90 && NEMF<0.90 && NumConst>1 && MUF<0.8) && ((abs(eta)<=2.4 && CHF>0 && CHM>0 && CEMF<0.90) || abs(eta)>2.4);
+      
+      int jetid = looseJetID*1+tightJetID*2;
+      value_jet_id[value_jet_n] = jetid;
+   */   
+/* 
       ++value_jet_n;
       if (int(value_jet_n) >= max_jet) {
-        cout << "NanoAnalyzer: max_jet exceeded" << endl;
+        std::cout << "NanoAnalyzer: max_jet exceeded" << std::endl;
         continue;
       }
     }
   }
+
+  // cout << "hello FatJet" << endl; 
+
+  // FatJets
+  const float fatjet_min_pt = 15;
+  value_fatjet_n = 0;
+#ifndef miniAOD
+  for (reco::PFJetCollection::const_iterator it = fatjets->begin(); it != fatjets->end(); ++it) {
+#endif
+#ifdef miniAOD
+    for (pat::JetCollection::const_iterator it = fatjets->begin(); it != fatjets->end(); ++it) {
+#endif 
+    if (it->pt() > fatjet_min_pt) {
+      value_fatjet_pt[value_fatjet_n] = it->pt();
+      value_fatjet_eta[value_fatjet_n] = it->eta();
+      value_fatjet_phi[value_fatjet_n] = it->phi();
+      value_fatjet_mass[value_fatjet_n] = it->mass();
+
+      // cout << value_fatjet_n << " fatjet pt " << value_fatjet_pt[value_fatjet_n] << endl;
+
+#ifdef miniAOD
+      int pfConstituents = 0;
+#else
+      int pfConstituents = it->getPFConstituents().size();
+#endif
+
+      value_fatjet_area[value_fatjet_n] = it->jetArea();
+      value_fatjet_nConstituents[value_fatjet_n] = pfConstituents;
+#ifdef miniAOD
+      // code claims fatjets were not made from a PFjet
+      value_fatjet_nElectrons[value_fatjet_n] = 0;
+      value_fatjet_nMuons[value_fatjet_n] = 0;
+      value_fatjet_chEmEF[value_fatjet_n] = 0;
+      value_fatjet_chHEF[value_fatjet_n] = 0;
+      value_fatjet_neHEF[value_fatjet_n] = 0;
+#else
+      value_fatjet_nElectrons[value_fatjet_n] = it->electronMultiplicity();
+      value_fatjet_nMuons[value_fatjet_n] = it->muonMultiplicity();
+      value_fatjet_chEmEF[value_fatjet_n] = it->chargedEmEnergyFraction();
+      value_fatjet_chHEF[value_fatjet_n] = it->chargedHadronEnergyFraction();
+      value_fatjet_neEmEF[value_fatjet_n] = it->neutralEmEnergyFraction();
+      value_fatjet_neHEF[value_fatjet_n] = it->neutralHadronEnergyFraction();
+#endif
+
+      ++value_fatjet_n;
+      if (int(value_fatjet_n) >= max_fatjet) {
+        cout << "NanoAnalyzer: max_fatjet exceeded" << endl;
+        continue;
+      }
+    }
+  }
+
+  // cout << "hello before TrackJets" << endl; 
+
+  // TrackJets, available for Run 1 and UL, not in between and not Run 3
+  value_trackjet_n = 0;
+#ifndef CMSSW11plus
+#if defined (CMSSW42X) || defined (CMSSW53X) || defined(CMSSW106plus)
+  const float trackjet_min_pt = 0;
+#ifndef miniAOD
+  for (reco::TrackJetCollection::const_iterator it = trackjets->begin(); it != trackjets->end(); ++it) {
+#endif
+#ifdef miniAOD
+    for (pat::TrackJetCollection::const_iterator it = trackjets->begin(); it != trackjets->end(); ++it) {
+#endif 
+      //cout << "hello TrackJets start" << endl; 
+    if (it->pt() > trackjet_min_pt) {
+      //cout << "hello TrackJets " << value_trackjet_n << endl; 
+      value_trackjet_pt[value_trackjet_n] = it->pt();
+      value_trackjet_eta[value_trackjet_n] = it->eta();
+      value_trackjet_phi[value_trackjet_n] = it->phi();
+      value_trackjet_mass[value_trackjet_n] = it->mass();
+
+      //int pfConstituents = it->getPFConstituents().size();
+
+      value_trackjet_area[value_trackjet_n] = it->jetArea();
+      value_trackjet_nConstituents[value_trackjet_n] = it->numberOfTracks();
+      //value_trackjet_nElectrons[value_trackjet_n] = it->electronMultiplicity();
+      value_trackjet_nElectrons[value_trackjet_n] = 0;
+      //value_trackjet_nMuons[value_trackjet_n] = it->muonMultiplicity();
+      value_trackjet_nMuons[value_trackjet_n] = 0;
+
+      ++value_trackjet_n;
+      if (int(value_trackjet_n) >= max_trackjet) {
+        cout << "NanoAnalyzer: max_trackjet exceeded" << endl;
+        continue;
+      }
+    }
+  }
+    // for CMSSW106plus
+#endif
+    // for CMSSW11plus
+#endif
+ */
+    // cout << "hello after TrackJets" << endl; 
+
+  // GenJets  //Qun
+
+/*   const float gjet_min_pt = 10;
+  value_gjet_n = 0;
+
+  if (!isData) {
+
+#ifndef miniAOD
+  for (reco::GenJetCollection::const_iterator it = genjets->begin(); it != genjets->end(); ++it) {
+#endif
+#ifdef miniAOD
+  for (reco::GenJetCollection::const_iterator it = genjets->begin(); it != genjets->end(); ++it) {
+#endif 
+    if (it->pt() > gjet_min_pt) {
+      value_gjet_pt[value_gjet_n] = it->pt();
+      value_gjet_eta[value_gjet_n] = it->eta();
+      value_gjet_phi[value_gjet_n] = it->phi();
+      value_gjet_mass[value_gjet_n] = it->mass();
+      // cout << "genJet:" << value_gjet_n << " pt:" << value_gjet_pt[value_gjet_n] << " eta: "<< value_gjet_eta[value_gjet_n] << endl;
+      ++value_gjet_n;
+      if (int(value_gjet_n) >= max_gjet) {
+        std::cout << "NanoAnalyzer: max_gjet exceeded" << std::endl;
+        continue;
+      }
+    }
+   } 
+  } // isData */
+
+    // cout << "hello after GenJets" << endl; 
 
   // afiqaize
   // *************************************************************
@@ -5037,2279 +4785,77 @@ cout<<"---------------------------------"<<endl;*/
     }
   }
 
-  //cout << "hello D meson" << endl;
-    if (nanoext) {
+#ifdef charm
+  // cout << "hello D meson" << endl;
+
+  // do D meson reconstruction (nonstandard extension)
+#include "NanoDmeson.cc.forinclude" 
+#endif
+
+  Dstar_associationIdx.clear();
+  Dstar_associationProb.clear();
+  Dstar_associationchi2.clear();
+  //Vertex fit
+  //cout << "Calculating Vertex association QQ + C" << endl;
+  //cout << "Size Dimu: " << Dimu_muon1TransientTrack.size() << " " << Dimu_charge.size() << " Size Dstar " << Dstar_pisTransientTrack.size() << " " << Dstar_hasMuon.size() << endl;
+  size_t Dstar_size = Dstar_pisTransientTrack.size();
+  size_t Dimu_size = Dimu_muon1TransientTrack.size();
+  //cout << "Size Dimu: " << Dimu_size << ", Size Dstar: " << Dstar_size << endl;
+  for (UInt_t j = 0; j < Dstar_size; ++j) {
+    Int_t best_dimuidx = -99;
+    Float_t vertex_probability = -99.;
+    Float_t best_chi2_association = 9999.;
+    bool track_calculate = true;
+    if (DstarK_chg[j] == Dstarpi_chg[j]) track_calculate = false;
+    for (UInt_t i = 0; i < Dimu_size; ++i) {
+      if (Dimu_charge[i] != 0) track_calculate = false;
       
-//////////////////////////////////////////////////////////////////////////////
-//////////////////////////// D Meson Analysis Start //////////////////////////
-//////////////////////////////////////////////////////////////////////////////
+      if (track_calculate) {
+        vector<TransientTrack> tracksAssociation;
+        tracksAssociation.clear();
+        tracksAssociation.push_back(Dimu_muon1TransientTrack[i]);
+        tracksAssociation.push_back(Dimu_muon2TransientTrack[i]);
+        tracksAssociation.push_back(Dstar_pisTransientTrack[j]);
 
-  // nanoAOD extension //
+        KalmanVertexFitter  theFitterAssociation(true);
+        // do the fit
+        TransientVertex associationVertex = theFitterAssociation.vertex(tracksAssociation);  
+        if (!associationVertex.isValid()) continue;
+        // vertex parameters
+        float ndofAssociation = associationVertex.degreesOfFreedom();
+        // for Adaptive Vertex Fitter this sum of weights*2-3
+        // for Kalman Vertex Fitter this is 1 for two tracks?
+        float chi2Association = associationVertex.totalChiSquared();
+        if (chi2Association < best_chi2_association) {
+          best_chi2_association = chi2Association;
+          best_dimuidx = (Int_t) i;
 
-  // D0 meson object building strategy: (not yet fully implemented)
-  // handles: track pt, eta, quality
-  //          primary vertex/beam spot selection and quality
-  //          secondary vertex track preselection (kinematics, high purity?, uncertainty?)
-  //          secondary vertex fit + quality (chi2, prob/CL) (Adaptive, Kalman, DAF)
-  //          distance, pointing and pT fraction between primary and secondary
-  //          kinematic cuts on D0 and Dstar
-
-  // Preparation: 
-  // Loop over all primary vertices, then over all tracks associated to each 
-  // vertex and build sum pt for each. 
-  // Store a vertex counter and id assignment on the way. 
-  // Classify one of the primary vertices as 'muon trigger vertex' (if any),
-  // and tag it. If the situation is ambigous, select a main primary vertex 
-  // anyway, and mark all other vertices as not to be used (possible trigger 
-  // bias). For the main primary vertex only, recalculate sum pt excluding 
-  // the good muon(s).
-  // Generally exclude (flag) vertices which are not the trigger vertex and 
-  // which are within 1 cm of the trigger vertex. 
-  // Store list of vertices in ntuple.
-
-  // On the way, fill reference histograms for tracks and vertices.
-
-  // Build transient track list from Reco track list.
-  // First loop over all possible pairs of Reco tracks with loose 
-  // 'distance cut' and build two invariant masses assuming K/pi or pi/K.
-  // If either of them is within a loose D0 mass window (cut), loop over all 
-  // primary vertices and find the closest one in z. 
-  // Calculate zD0 from track pair and vertex sum pt, apply cut (if any).
-
-  // If unlike sign: 
-  // Create a list of the two corresponding transient tracks and apply the
-  // Adaptive Vertex Fitter or the Kalman Vertex Fitter.
-  // Both perform about equally.
-  // If the vertex fit quality is good, recalculate all kinematic D0 quantities 
-  // from the refitted tracks. 
-  // Reapply the relevant cuts more tightly. 
-  // Calculate decay length, uncertainty, significance, and cosphi w.r.t. the 
-  // chosen vertex. Check for ambigous close by alternative vertices.
-  // Apply cuts. 
-
-  // Apply final cuts to store the D0 candidate in the ntuple, without stopping
-  // loop if not satisfied. Store pointer to vertex.
-  // Consider to store only one D0 candidate within mass window per vertex.
-  // Deal with the Kpi/piK ambiguity.  
-  
-  // D* object building strategy: (not yet fully implemented)
-
-  // Apply separate set of preselection cuts for D0 from D*.
-
-  // If like sign:
-  // First make some rough check whether this can lead to a Dstar candidate,
-  // i.e. wheter there are suitable slow pion candidates.
-  // If there are, proceed with revertexing as above.
-  // If there aren't, go to next pair.
-
-  // Loop over all primary tracks from relevant vertex for slow pion, and 
-  // select appropriate D0 combination (Kpi or piK) according to charge.
-  // Check whether also some non-primary tracks should be considered.
-  
-  // Calculate D* parameters, cut, and store the result for both "right" 
-  // and "wrong" sign candidates.
-  // Allow more than one entry per vertex to avoid bias of wrong sign vs. 
-  // right sign (but should be rare). 
-
-
-  // 'D+' branch can be forked from D0 branch after initial selection:
-  // Loop over all possible third track candidates and revertex + cut
-  // (not yet implemented).
-
-  // For all meson types, cuts may differ depending on whether 'trigger
-  // vertex' is used or not. 
-
-
-  // declare and initialize variables that u want to use for Dmeson only 
-  float vc[3] = {0.};
-  float vcD0[3] = {0.};
-  float vc2[3] = {0.};
-  int sumntrk = 0;
-  float sumpt1 = 0.;
-  float sumpt2 = 0.;
-  float sumptdR15 = 0.;
-  float sumptdR10 = 0.;
-  float sumptdR07 = 0.;
-  float sumptdR04 = 0.;
-  
-  float vc1[3] = {0.};
-  float vc3[3] = {0.};
-
-  int simidD0 = -1; 
-  int t1pdgid = 0; 
-  int t2pdgid = 0; 
-  int vtxidD0 = -1; 
- 
-  float zD0 = 0.;
-  float zD015 = 0.;
-  float zD010 = 0.;
-  float zD007 = 0.;
-  float zD004 = 0.;
-  float zDstar = 0.;
-
-  float rapD0 = 999.;
-  float chi2D0 = 999.;
-  float dlxyD0 = 0.;
-  float dlxyerrD0 = 0.;
-  float dlxysigD0 = 0.;
-  float cosphixyD0 = 0.;
-  float dlD0 = 0.;
-  float dlerrD0 = 0;
-  float dlsigD0 = 0; 
-  float cosphiD0 = 0;
-  
-  float deltam, deltam2;
-  float deltamr, deltamr2;
-  float chi2Pis = 999.;
-  float rapDstar = 999.;
-  int   simidDstar = -1;
-  float mD012 = 0.;
-  float mD021 = 0.;
-  float mD0KK = 0.;
-
-  // for both AdaptiveVertexFitter and KalmanVertexFitter options  
-  vector<TransientTrack> mytracksforD0;
-  vector<TransientTrack> mytracksforpislow;
-  vector<TransientTrack> mytracksforDstar;
-  TransientVertex myVertex;
-  TransientVertex myPisVertex;
-
-  bool VtxFound = false;
-  int VtxCounter = 0;
-  bool VtxFound2 = false;
-  int VtxCounter2 = 0;
-  int ivtx =0;
-  float distzmin = 999.;
-  int ivtxmin = -1;
-
-  // define four-vectors
-  TLorentzVector p4K1;
-  TLorentzVector p4K2;
-  TLorentzVector p4pi1;
-  TLorentzVector p4pi2;
-  TLorentzVector p4D012;
-  TLorentzVector p4D021;
-  TLorentzVector p4D0KK;
-  TLorentzVector p4pis, p4pisr;
-  TLorentzVector p4Dstar, p4Dstar2, p4Dstarr, p4Dstarr2;
-  TLorentzVector p4DstarD0;
-  
-  p4K1.SetPtEtaPhiM(0., 0., 0., 0.);
-  p4K2.SetPtEtaPhiM(0., 0., 0., 0.);
-  p4pi1.SetPtEtaPhiM(0., 0., 0., 0.);
-  p4pi2.SetPtEtaPhiM(0., 0., 0., 0.);
-  p4D012.SetPtEtaPhiM(0., 0., 0., 0.);
-  p4D021.SetPtEtaPhiM(0., 0., 0., 0.);
-  p4pis.SetPtEtaPhiM(0., 0., 0., 0.);
-  p4Dstar.SetPtEtaPhiM(0., 0., 0., 0.);
-  p4DstarD0.SetPtEtaPhiM(0., 0., 0., 0.);
-      
-  reco::VertexCollection::const_iterator iteForD0;
-  reco::VertexCollection::const_iterator itemin;
-  //  vector<TransientTrack>::iterator d1;
-  //  vector<TransientTrack>::iterator d2;
-
-
-////////////////////////////////////////////////////////////////////////////
-// List of cuts or selections applied to Dmeson candidates                //
-////////////////////////////////////////////////////////////////////////////
-  UInt_t trkminD0 = 2;     // minimum number of tracks for D0 
-  UInt_t trkminDstar = 3;  // minimum number of tracks for Dstar
-  //Float_t ptKpimin = 0.5;  // minimum pT for kaon and pion candidate
-  Float_t ptKpimin = 0.3;  // minimum pT for kaon and pion candidate
-                           // (before type is decided, before revertexing)
-  //Float_t ptKmin = 0.4;    // minimum pT for Kaon candidate (not yet used)
-  //Float_t ptpimin = 0.3;   // minimum pT for pion candidate (not yet used)
-  // (the softer cuts might be relevant for low pt D0's)
-  // (for these: use also dEdx information?)
-
-  // WorkBook: For matching, vertices & track origins should be separated by 
-  // at most 1 mm and at most 3 sigma; 
-  // here we use 1 mm only throughout, from a previous empirical study,
-  // and since we want to associate also close secondaries 
-  Float_t vKpi_xymax = 0.1; // maximum vertex distance in xy for K and pi 
-  //Float_t vKpi_xymax = 0.15; // maximum vertex distance in xy for K and pi 
-  Float_t vKpi_zmax = 0.1;  // maximum vertex distance in z for K and pi
-  Float_t vD0pis_xymax = 0.1; // maximum vertex distance in xy for pis
-  Float_t vD0pis_zmax = 0.1;  // maximum vertex distance in z for pis 
-  Float_t vD0trksum_xymax = 0.1; // maximum vertex distance in xy for D0
-  Float_t vD0trksum_zmax = 0.1;  // maximum vertex distance in z for D0
-  Float_t vdistzmax = 1.; // maximum z distance of prim. vtx to be be considered
-  // Float_t vKpi_xymax = 0.2; // maximum vertex distance in xy for K and pi 
-  // Float_t vKpi_zmax = 0.2;  // maximum vertex distance in z for K and pi
-  // Float_t vD0pis_xymax = 0.2; // maximum vertex distance in xy for pis
-  // Float_t vD0pis_zmax = 0.2;  // maximum vertex distance in z for pis 
-  // Float_t vD0trksum_xymax = 0.2; // maximum vertex distance in xy for D0
-  // Float_t vD0trksum_zmax = 0.2;  // maximum vertex distance in z for D0
-  Float_t mD0min1 = 1.5;  // loose minimum D0 mass for D*
-  Float_t mD0max1 = 2.3;  // loose maximum D0 mass for D* 
-  Float_t D0ptmin = 3.5;  // minimum D0 pt to accept low z (also for D*)
-  //Float_t zD0min  = 0.1;  // z cut on low pt D0's (also for D*)
-  Float_t zD0min  = 0.0;  // z cut on low pt D0's (also for D*)
-  Float_t D0ptmin1= 1.5;  // minimum D0 pt for medium z (also for D*)
-  // Float_t zD0min1 = 0.2;  // z cut on very low pt D0's (also for D*)
-  Float_t zD0min1 = 0.15;  // z cut on very low pt D0's (also for D*)
-  Float_t DstarD0ptmin = 1.4; // minimum D0 pt for Dstar only
-                              // reflects implicit slow pion cutoff
-  // Float_t dlxyD0min = -99; // minimum decay length to store D0 (not for Dstar)
-  Float_t dlxyD0min = 0.02; // minimum decay length to store D0 (not for Dstar)
-  Float_t dlsigD0min = 1.5; // minimum significance to store D0 (not for Dstar)
-  //  Float_t zDstarmin = 0.05; // final z cut on all Dstar candidates
-  Float_t zDstarmin = 0.00; // final z cut on all Dstar candidates
-                            // (beware for multi-parton interactions, 
-                            //  associated production, 
-                            //  and/or fragmentation function measurements) 
-  // Float_t mD0min = 1.75;  // minimum D0 mass for D0
-  // Float_t mD0max = 1.98;  // maximum D0 mass for D0
-  Float_t mD0min = 1.68;  // minimum D0 mass for D0
-  Float_t mD0max = 2.05;  // maximum D0 mass for D0
-  Float_t ptpismin = 0.;  // minimum slow pi pt
-  Float_t dmDstarmax = 0.17; // standard maximum D* mass
-  //Float_t cosphimin = 0.99; // minimum cosphi for D0 w.r.t. primary vertex
-  Float_t cosphimin = -1.; // minimum cosphi for D0 w.r.t. primary vertex
-
-  // tight cuts for D* candidate 'cross' storage
-  // Float_t mD0tmin = mD0Actual-0.025;  // tight minimum D0 mass
-  // Float_t mD0tmax = mD0Actual+0.025;  // tight maximum D0 mass
-  Float_t mD0tmin = mD0Actual-0.04;  // tight minimum D0 mass
-  Float_t mD0tmax = mD0Actual+0.04;  // tight maximum D0 mass
-  // Float_t dmDstartmin = dmDstarActual-0.001; // tight mimimum D* mass
-  // Float_t dmDstartmax = dmDstarActual+0.001; // tight maximum D* mass
-  Float_t dmDstartmin = dmDstarActual-0.002; // tight mimimum D* mass
-  Float_t dmDstartmax = dmDstarActual+0.002; // tight maximum D* mass
-///////////////////////////
-/// end of list of cuts ///
-///////////////////////////
-
-    // clear the storage containers for this objects in this event
-  //------------------------------- For D0 branches -------------------------//
-  nD0 = 0;
-
-  // Kaon from D0
-  D0t1_pt.clear();
-  D0t1_eta.clear();
-  D0t1_phi.clear();
-  D0t1_chg.clear();
-  D0t1_tkIdx.clear();
-  D0t1_Kprob.clear();
-  D0t1_piprob.clear();
-  D0t1_dEdxnmeas.clear();
-  D0t1_dEdxnsat.clear();
-  D0t1_vtxIdx.clear();
-  D0t1_chindof.clear();
-  D0t1_nValid.clear();
-  D0t1_nPix.clear();
-  D0t1_isHighPurity.clear();
-  D0t1_dxy.clear();
-  D0t1_dz.clear();
-  D0t1_pdgId.clear();
-
-  // Pion from D0
-  D0t2_pt.clear();
-  D0t2_eta.clear();
-  D0t2_phi.clear();
-  D0t2_chg.clear();
-  D0t2_tkIdx.clear();
-  D0t2_Kprob.clear();
-  D0t2_piprob.clear();
-  D0t2_dEdxnmeas.clear();
-  D0t2_dEdxnsat.clear();
-  D0t2_vtxIdx.clear();
-  D0t2_chindof.clear();
-  D0t2_nValid.clear();
-  D0t2_nPix.clear();
-  D0t2_isHighPurity.clear();
-  D0t2_dxy.clear();
-  D0t2_dz.clear();
-  D0t2_pdgId.clear();
-
-  // D0
-  D0_pt.clear();
-  D0_eta.clear();
-  D0_phi.clear();
-  D0_rap.clear();
-  D0_mass12.clear();
-  D0_mass21.clear();
-  D0_massKK.clear();
-  D0_simIdx.clear();
-  D0_DstarIdx.clear();
-  D0_ambiPrim.clear();
-  D0_vtxIdx.clear();
-  D0_hasMuon.clear();
-  D0_chi2.clear();
-  D0_dlxy.clear();
-  D0_dlxyErr.clear();
-  D0_dlxySig.clear();
-  D0_cosphixy.clear();
-  D0_dl.clear();
-  D0_dlErr.clear();
-  D0_dlSig.clear();
-  D0_cosphi.clear();
-  D0_ptfrac.clear();
-  D0_ptfrac15.clear();
-  D0_ptfrac10.clear();
-  D0_ptfrac07.clear();
-  D0_ptfrac04.clear();
-  D0_x.clear();
-  D0_y.clear();
-  D0_z.clear();
-  D0_Covxx.clear();
-  D0_Covyx.clear();
-  D0_Covzx.clear();
-  D0_Covyy.clear();
-  D0_Covzy.clear();
-  D0_Covzz.clear();
-
-  //----------------------------- For Dstar branches ------------------------//
-  nDstar = 0;
-
-  // Slow Pion from Dstar
-  Dstarpis_pt.clear();
-  Dstarpis_eta.clear();
-  Dstarpis_phi.clear();
-  Dstarpis_ptr.clear();
-  Dstarpis_etar.clear();
-  Dstarpis_phir.clear();
-  Dstarpis_chg.clear();
-  Dstarpis_tkIdx.clear();
-  Dstarpis_Kprob.clear();
-  Dstarpis_piprob.clear();  
-  Dstarpis_dEdxnmeas.clear();
-  Dstarpis_dEdxnsat.clear();
-  Dstarpis_vtxIdx.clear();
-  Dstarpis_chindof.clear();
-  Dstarpis_chir.clear();
-  Dstarpis_nValid.clear();
-  Dstarpis_nPix.clear();
-  Dstarpis_dxy.clear();
-  Dstarpis_dz.clear();
-
-  // D0 from Dstar
-  DstarD0_pt.clear();
-  DstarD0_eta.clear();
-  DstarD0_phi.clear();
-  DstarD0_mass.clear();
-  DstarD0_chi2.clear();
-  DstarD0_dlxy.clear();
-  DstarD0_dlxyErr.clear();
-  DstarD0_dlxySig.clear();
-  DstarD0_cosphixy.clear();
-  DstarD0_dl.clear();
-  DstarD0_dlErr.clear();
-  DstarD0_dlSig.clear();
-  DstarD0_cosphi.clear();
-  DstarD0_ptfrac.clear();
-  DstarD0_ptfrac15.clear();
-  DstarD0_ptfrac10.clear();
-  DstarD0_ptfrac07.clear();
-  DstarD0_ptfrac04.clear();
-  DstarD0_x.clear();
-  DstarD0_y.clear();
-  DstarD0_z.clear();
-  DstarD0_simIdx.clear();
-  DstarD0_recIdx.clear();
-  DstarD0_ambiPrim.clear();
-
-  // Kaon from Dstar  
-  DstarK_pt.clear();
-  DstarK_eta.clear();
-  DstarK_phi.clear();
-  DstarK_chg.clear();
-  DstarK_tkIdx.clear();
-  DstarK_Kprob.clear();
-  DstarK_piprob.clear();
-  DstarK_dEdxnmeas.clear();
-  DstarK_dEdxnsat.clear();
-  DstarK_vtxIdx.clear();
-  DstarK_chindof.clear();
-  DstarK_nValid.clear();
-  DstarK_nPix.clear();
-  DstarK_isHighPurity.clear();
-  DstarK_dxy.clear();
-  DstarK_dz.clear();
-
-  // Pion from Dstar
-  Dstarpi_pt.clear();
-  Dstarpi_eta.clear();
-  Dstarpi_phi.clear();
-  Dstarpi_chg.clear();
-  Dstarpi_tkIdx.clear();
-  Dstarpi_Kprob.clear();
-  Dstarpi_piprob.clear();
-  Dstarpi_dEdxnmeas.clear();
-  Dstarpi_dEdxnsat.clear();
-  Dstarpi_vtxIdx.clear();
-  Dstarpi_chindof.clear();
-  Dstarpi_nValid.clear();
-  Dstarpi_nPix.clear();
-  Dstarpi_isHighPurity.clear();
-  Dstarpi_dxy.clear();
-  Dstarpi_dz.clear();
-  
-  // Dstar
-  Dstar_pt.clear();
-  Dstar_eta.clear();
-  Dstar_phi.clear();
-  Dstar_rap.clear();
-  Dstar_deltam.clear();
-  Dstar_deltamr.clear();
-  Dstar_simIdx.clear();
-  Dstar_vtxIdx.clear();
-  Dstar_hasMuon.clear();
-  Dstar_ptfrac.clear();
-
-  // check for track collection with at least 2 tracks (for D0) 
-  if (tracks->size() >= trkminD0) {
-    
-#ifndef miniAOD
-    // build transient track list from all tracks for later revertexing
-    vector<reco::TransientTrack> genralTracks_forD = (*theB).build(tracks);
-#endif
-
-    //---------- 1st loop: over tracks (K or pi)  -----------//
-    int it1count = -1;
-#ifndef miniAOD
-    // loop over AOD track collection
-    for (reco::TrackCollection::const_iterator it1 = tracks->begin(); it1 != tracks->end(); ++it1) {
-      ++it1count;
-#endif
-#ifdef miniAOD
-    // loop over miniAOD PackedCandidates and find tracks with track details
-    // (pt > 0.4 GeV)
-    for (pat::PackedCandidateCollection::const_iterator ic1 = tracks->begin(); ic1 != tracks->end(); ++ic1) {
-      ++it1count;
-      if (!(ic1->hasTrackDetails())) continue; 
-      auto tk1 = ic1->pseudoTrack();  // needed for transient track build
-      auto it1 = ic1->bestTrack(); 
-      if (it1 == nullptr) continue; 
-#endif
-      // it1 is now track iterator for AOD tracks, and track pointer for 
-      // 'full info' miniAOD tracks
-
-      // print info about all tracks within 1 cm of true D0 //
-      if (Bingo==1 && abs(it1->vx()-D0vtxx)< 1. && abs(it1->vy()-D0vtxy)<1. && abs(it1->vz()-D0vtxz)<1.) {
-      cout << "track pt " << it1->pt() << " eta " << it1->eta() << " phi " << it1->phi() << " vtx " << it1->vx() << " " << it1->vy() << " " << it1->vz() << endl; 
+          if (ndofAssociation >= 1) {
+            vertex_probability = TMath::Prob(chi2Association,(Int_t)ndofAssociation); 
+          }
+        }
       }
 
-      // fill inclusive pt and eta histograms
-      h_trackpt->Fill(it1->pt());
-      h_trackptlow->Fill(it1->pt());
-      h_tracketa->Fill(it1->eta());
+      // confidence level
+      
+      // cut on chisquared (Adaptive) or CL (Kalman) here?
 
-      // pt cut on first track
-      if (it1->pt() > ptKpimin) {
+      //cout << "ndof: " << ndofAssociation << " chi2: " << chi2Association << " CL: " << CLAssociation << endl;
 
-	//cout << "KELUAR X 0?" << endl;
+    }
+    Dstar_associationIdx.push_back(best_dimuidx);
+    Dstar_associationProb.push_back(vertex_probability);
+    Dstar_associationchi2.push_back(best_chi2_association/3); // chi2/ndof
+      
+  }
 
-        // store track quality variables //
-        // need to deal with fact that first track might be used with 
-        // several 2nd tracks ...
-        int t1vtxid = -1;
-#ifndef miniAOD
-        float t1chindof = it1->chi2()/it1->ndof();
-#endif
-#ifdef miniAOD
-        float t1chindof = it1->normalizedChi2();
-#endif
-        int t1nvalid = it1->hitPattern().numberOfValidHits();
-        int t1npix = it1->hitPattern().numberOfValidPixelHits();
-        //bool t1highp = it1->trackHighPurity();
-        bool t1highp = it1->quality(Track::highPurity);
-        float t1dxy = 0;
-        float t1dz = 0;
 
-        float t1piprob = -9999.;
-        float t1Kprob = -9999.;
-        int dedxtrknmeas = -9999;
-        int dedxtrknsat = -9999;
-#ifndef CMSSW7plus
-        // for dEdx (from example by G. Fedi)
-        // beware of potential slowdown!
-        //cout << "Hello dEdx" << endl;
-	reco::TrackRef trackRef = reco::TrackRef(tracks,it1count);   
-        //cout << "Hello dEdx " << dedxexist << endl;
-        if (dedxexist>0) {
-          // the following is OK
-          //cout << "Hello dEdx " << trackRef->pt() << endl;
-          //cout << "Hello dEdx " << energyLossHandle->size() << " " << tracks->size() << endl;
-          //cout << "Hello dEdx " << (*energyLossHandle)[trackRef].dEdx() << endl;
-          // crash on the following line (eloss):
-          //float dedxtrk = eloss[trackRef7].dEdx();
-          //float dedxtrk = (*energyLossHandle)[trackRef].dEdx();
-          //float dedxtrkerr = (*energyLossHandle)[trackRef].dEdxError();
-          double dedxtrk = (*energyLossHandle)[trackRef].dEdx();
-          double dedxtrkerr = (*energyLossHandle)[trackRef].dEdxError();
-          dedxtrknsat = (*energyLossHandle)[trackRef].numberOfSaturatedMeasurements();
-          dedxtrknmeas = (*energyLossHandle)[trackRef].numberOfMeasurements();
-          // temporarily "misuse" the piprob and Kprob variables for direct dEdx:
-          t1piprob = dedxtrkerr;    
-          t1Kprob = dedxtrk;
-        }
-#endif    
-#ifdef CMSSW7plus
-        // for dEdx (from example by M. Soares)
-        // beware of potential slowdown!
-	reco::TrackRef trackRef = reco::TrackRef(tracks,it1count);   
-        double stripMapdedx = ( stripmap >0 ? (*dedxStMap)[trackRef].dEdx() : 0.);
-        double pixMapdedx = ( pixmap >0 ? (*dedxPixMap)[trackRef].dEdx() : 0.);
-        // temporarily "misuse" the piprob and Kprob variables for direct dEdx:
-        t1piprob = pixMapdedx;    
-        t1Kprob = stripMapdedx;    
-        dedxtrknsat = ( stripmap >0 ? (*dedxStMap)[trackRef].numberOfSaturatedMeasurements() : 0.);
-	dedxtrknmeas = ( stripmap >0 ? (*dedxStMap)[trackRef].numberOfMeasurements() : 0.);
-#endif
-
-        // this would be the place to cut on these variables, if wished! //
-        // skip unnecessary low pt tracks
-        if (it1->pt() < 0.5 && t1Kprob < 4) continue; 
-        //cout << "Hello dEdx survived" << endl;
-
-	//------ 2nd loop: over tracks (pi or K) ------------//
-        // loop over each pair only once;
-        // which is K and which is pi is to be decided later
-        int it2count = it1count -1;
-#ifndef miniAOD
-        // loop over AOD track collection
-	for (reco::TrackCollection::const_iterator it2 = it1; it2 != tracks->end(); ++it2) {
-          ++it2count;
-#endif
-#ifdef miniAOD
-        // loop over miniAOD PackedCandidate collection
-	for (pat::PackedCandidateCollection::const_iterator ic2 = ic1; ic2 != tracks->end(); ++ic2) {
-          ++it2count;
-          if (!(ic2->hasTrackDetails())) continue; 
-          auto tk2 = ic2->pseudoTrack();  // needed for transient track build
-          auto it2 = ic2->bestTrack(); 
-          if (it2 == nullptr) continue; 
-#endif	  
-          // it2 is now iteractor for AOD tracks or pointer for miniAOD 
-          // tracks with full information
-
-          // both unlike sign (for D0 and D*) and like sign (for wrong sign D*)
-          // will be accepted
-
-	  // check track 2 is not track 1 
-          // (do this more elegantly directly in iterator?)
-	  if (it2 == it1) continue;
-          // apply pt cut (no explicit eta cut!)
-          if (it2->pt() > ptKpimin) {
-
-            // store track quality variables //
-            // logic of resetting t1 should be reconsidered
-            t1vtxid = -1;
-            int t2vtxid = -1;
-            bool ambiprimary = false;
-#ifndef miniAOD
-            float t2chindof = it2->chi2()/it2->ndof();
-#endif
-#ifdef miniAOD
-            float t2chindof = it2->normalizedChi2();
-#endif
-            int t2nvalid = it2->hitPattern().numberOfValidHits();
-            int t2npix = it2->hitPattern().numberOfValidPixelHits();
-            //bool t2highp = it2->trackHighPurity();
-            bool t2highp = it2->quality(Track::highPurity);
-            float t2dxy = 0;
-            float t2dz = 0;
-
-            float t2piprob = -9999.;
-            float t2Kprob = -9999.;
-            int dedxtrk2nmeas = -9999;
-            int dedxtrk2nsat = -9999;
-#ifndef CMSSW7plus
-            // for dEdx (from example by G. Fedi)
-            // beware of potential slowdown!
-	    reco::TrackRef trackRef = reco::TrackRef(tracks,it2count);   
-            double dedxtrk = (*energyLossHandle)[trackRef].dEdx();
-            double dedxtrkerr = (*energyLossHandle)[trackRef].dEdxError();
-            dedxtrk2nsat = (*energyLossHandle)[trackRef].numberOfSaturatedMeasurements();
-            dedxtrk2nmeas = (*energyLossHandle)[trackRef].numberOfMeasurements();
-            // temporarily "misuse" the piprob and Kprob variables for direct dEdx:
-            t2piprob = dedxtrkerr;    
-            t2Kprob = dedxtrk;
-#endif    
-#ifdef CMSSW7plus
-            // for dEdx (from example by M. Soares)
-            // beware of potential slowdown!
-	    reco::TrackRef trackRef = reco::TrackRef(tracks,it2count);   
-            double stripMapdedx = ( stripmap >0 ? (*dedxStMap)[trackRef].dEdx() : 0.);
-            double pixMapdedx = ( pixmap >0 ? (*dedxPixMap)[trackRef].dEdx() : 0.);
-            // temporarily "misuse" the piprob and Kprob variables for direct dEdx:
-            t2piprob = pixMapdedx;    
-            t2Kprob = stripMapdedx;
-            dedxtrk2nsat = ( stripmap >0 ? (*dedxStMap)[trackRef].numberOfSaturatedMeasurements() : 0.);
-            dedxtrk2nmeas = ( stripmap >0 ? (*dedxStMap)[trackRef].numberOfMeasurements() : 0.);
-#endif
-
-           // this would be the place to cut on these variables, if wished! //
-           // skip unnecessary low pt tracks
-	   if (it2->pt() < 0.5 && t2Kprob < 4) continue; 
-           //cout << "Hello dEdx 2 survived" << endl;
-
-	    // calculate track origin separations in x, y and z
-	    vc[0] = abs(it1->vx() - it2->vx());
-	    vc[1] = abs(it1->vy() - it2->vy());
-	    vc[2] = abs(it1->vz() - it2->vz());
-
-	    // check they are separated at most by a radius of 1mm
-	    // in x and y and a distance of 0.1 in z
-	    if (sqrt ((vc[0] * vc[0]) + (vc[1] * vc[1])) < vKpi_xymax && vc[2] < vKpi_zmax) {
-		  
-	      // Calculate 4 momentum for kaon and pion using TLorentzVector
-              // treat the two possible combinations (Kpi or piK)
-	      p4K1.SetPtEtaPhiM(it1->pt(), it1->eta(), it1->phi(), Kmass);
-	      p4K2.SetPtEtaPhiM(it2->pt(), it2->eta(), it2->phi(), Kmass);
-	      p4pi1.SetPtEtaPhiM(it1->pt(), it1->eta(), it1->phi(), pimass);
-	      p4pi2.SetPtEtaPhiM(it2->pt(), it2->eta(), it2->phi(), pimass);
-		              
-	      // get four-vector, and from this pt, eta, phi, and mass 
-              // (2 possible combinations)
-	      p4D012 = p4K1 + p4pi2;
-	      p4D021 = p4K2 + p4pi1;
-	      p4D0KK = p4K1 + p4K2;
-              // the two masses can kinematically differ by up to a factor 
-              // mK/mpi for very asymmetric momenta.
-              // for completely symmetric momenta, they will be identical.
-              // investigate cut on momentum asymmetry (costheta*)?
-	      mD012 = p4D012.M();
-	      mD021 = p4D021.M();
-	      mD0KK = p4D0KK.M();
-
-	      if (Bingo) cout << "2nd track pt " << it2->pt() << " dist "<< vc[0] << " " << vc[1] << " " << vc[2] << " mass " << mD012 << " " << mD021 << endl;
-
-              // apply loose mass cut
-              if (   (mD012 < mD0min1 || mD012 > mD0max1)
-		  && (mD021 < mD0min1 || mD021 > mD0max1) ) continue;
-
-              //cout << "mD0 " << mD012 << " " << mD021 << " " << mD0KK << endl;
-	      
-              // determine D0 px, py, pz
-	      // paxisD0[0] = it1->px() + it2->px();
-	      // paxisD0[1] = it1->py() + it2->py();
-	      // paxisD0[2] = it1->pz() + it2->pz();
-			      
-	      // roughly locate D0 'vertex' using average coordinate of tracks
-	      vcD0[0] = 0.5 * (it1->vx() + it2->vx());
-	      vcD0[1] = 0.5 * (it1->vy() + it2->vy());
-	      vcD0[2] = 0.5 * (it1->vz() + it2->vz());
-
-	      // move this outside loop after having cleaned up vertex structure
-              // *** even better, directly use vertex variable ***
-              // ... but this does not allow partial sums, 
-              //     so keep here after all?
-              sumntrk = 0;
-	      sumpt1 = 0;
-	      sumptdR15 = 0;
-	      sumptdR10 = 0;
-	      sumptdR07 = 0;
-	      sumptdR04 = 0;
-	      // loop over all tracks
-#ifndef miniAOD
-              // loop over AOD track collection
-	      for (reco::TrackCollection::const_iterator itSum1 = tracks->begin(); itSum1 != tracks->end(); ++itSum1) {
-#endif
-#ifdef miniAOD
-              // loop over miniAOD PackedCandidates with full track info
-              // (some low pt tracks will be missed)
-	      for (pat::PackedCandidateCollection::const_iterator icSum1 = tracks->begin(); icSum1 != tracks->end(); ++icSum1) {
-		if (!(icSum1->hasTrackDetails())) continue;
-                auto itSum1 = icSum1->bestTrack();
-                if (itSum1 == nullptr) continue; 
-#endif
-		// check track origins
-		vc1[0] = abs(vcD0[0] - itSum1->vx());
-		vc1[1] = abs(vcD0[1] - itSum1->vy());
-		vc1[2] = abs(vcD0[2] - itSum1->vz());
-		
-	        if ((sqrt(vc1[0] * vc1[0]) + (vc1[1] * vc1[1])) < vD0trksum_xymax && vc1[2] < vD0trksum_zmax) {
-                  ++sumntrk;  // number of tracks associated to this vertex
-		  sumpt1 += abs(itSum1->pt()); // sum pt for all tracks
-                  float deltaeta1 = p4D012.Eta()-itSum1->eta();
-                  float deltaphi1 = p4D012.Phi()-itSum1->phi();
-                  if (deltaphi1>3.1415) deltaphi1 = deltaphi1-2.*3.1415;
-		  if (deltaphi1<-3.1415) deltaphi1 = deltaphi1+2.*3.1415;
-		  float deltaR1 = sqrt(deltaeta1*deltaeta1+deltaphi1*deltaphi1);
-                  if (deltaR1<1.5) {
-                    sumptdR15 += abs(itSum1->pt());
-                    if (deltaR1<1.0) { 
-                      sumptdR10 += abs(itSum1->pt());
-                      if (deltaR1<0.7) {
-                        sumptdR07 += abs(itSum1->pt());
-                        if (deltaR1<0.4) { 
-                          sumptdR04 += abs(itSum1->pt());
-                        }
-                      }
-                    }
-                  }
-		} // end of Sumpt vertex check
-	      } // end of itSum loop
-	      //cout << "KELUAR X 1?" << endl;
-
-              // will be slightly different for AOD and miniAOD
-	      // old: zD0 = (p4D0.Pt()) / sumpt1;
-	      zD0   = (it1->pt() + it2->pt()) / sumpt1;
-	      zD015 = (it1->pt() + it2->pt()) / sumptdR15;
-	      zD010 = (it1->pt() + it2->pt()) / sumptdR10;
-	      zD007 = (it1->pt() + it2->pt()) / sumptdR07;
-	      zD004 = (it1->pt() + it2->pt()) / sumptdR04;
-
-              // reject if both low pt and low z
-              // (to limit revertexing, this will also propagate to D*)
-              // this is the same for the 12 and 21 combinations
-              if (p4D012.Pt() < D0ptmin  && zD0 < zD0min)  continue;
-              if (p4D012.Pt() < D0ptmin1 && zD0 < zD0min1) continue;
-
-	      // build D0 track collection for revertexing
-		mytracksforD0.clear();
-#ifndef miniAOD
-                // loop over prebuilt list of AOD transient tracks
-		for (vector<TransientTrack>::iterator gt_trans = genralTracks_forD.begin(); gt_trans != genralTracks_forD.end(); ++gt_trans) {
-					
-		  const reco::TrackRef trackRef1 = (gt_trans->trackBaseRef()).castTo<reco::TrackRef>();
-		  if (&*it1 == trackRef1.get() || &*it2 == trackRef1.get()) {
-					    
-		    TransientTrack  transientTrack1 = theB->build(trackRef1);
-		    mytracksforD0.push_back(transientTrack1);
-		  }
-		}
-#endif
-#ifdef miniAOD 
-                // build transient tracks from relevant miniAOD tracks
-	        TransientTrack  transientTrack1 = theB->build( tk1 );
-		mytracksforD0.push_back(transientTrack1);
-	        TransientTrack  transientTrack2 = theB->build( tk2 );
-		mytracksforD0.push_back(transientTrack2);
-#endif              
-
-		//cout << "KELUAR X 2?" << endl;
-		  
-                double D0x = 0, D0y=0, D0z=0;
-                double cov_sv[3][3], cov_pv[3][3], deriv[3];
-                double dlerr = 0, dlxyerr=0;
-
-                // important to initialize already here
-                ivtxmin=-1;
-
-		// turn if into continue? //
-		if (mytracksforD0.size() > 1/*&& !VtxFound2*/) {
-  					
-                  // initialize vertex finding flags
-                  // VtxFound indicates match to particular vertex
-                  // VtxFound2 indicates that any match has been found
-                  // Does this logic still make sense after structural change?
-		  VtxFound = false;
-  		  VtxFound2 = false;
-
-//////////////////////////////////////////////////////////////////////////////
-///////////////// Do the D0 vertex refit /////////////////////////////////////
-// 		  AdaptiveVertexFitter  theFitter1;
-//		  // if you don't/do want the beam constraint
-//                // (since we look for secondary vertices we don't) 
-//		  myVertex = theFitter1.vertex(mytracksforD0/*, vertexBeamSpot*/);  
-//                // can the latter option also be used to add a track to an
-//                // already existing vertex (e.g. a muon to a DO)?
-//
-//                // track weights can be accessed through 
-//                // TransientVertex::trackWeight(trk)
-
-//////////////////////////////////////////////////////////////////////////////
-///////////////// Do the D0 vertex refit /////////////////////////////////////
-                  // allow track parameter reevaluation 
-                  // (Twiki: currently only the KalmanVertex can do this)
- 		  KalmanVertexFitter  theFitter2(true);
-                  // do the fit
-		  myVertex = theFitter2.vertex(mytracksforD0);  
-                  if (!myVertex.isValid()) continue;
-
-		  //cout << "haha refitted" << endl;
-
-///////////////// retrieve information ////////////////////////////////////
-
-                  // vertex parameters
-		  float ndof = myVertex.degreesOfFreedom();
-                  // for Adaptive Vertex Fitter this sum of weights*2-3
-                  // for Kalman Vertex Fitter this is 1 for two tracks?
-                  chi2D0 = myVertex.totalChiSquared();
-                  // confidence level
-                  float CL=999.;
-                  if (ndof >= 1) {
-                    CL = TMath::Prob(chi2D0,(int)ndof); 
-                  }
-                  // cut on chisquared (Adaptive) or CL (Kalman) here?
-                  if (CL<0.01) continue;
-
-                  // good vertex, get position
-                  D0x = myVertex.position().x();
-                  D0y = myVertex.position().y();
-                  D0z = myVertex.position().z();
-
-                  // track parameters
-                  if (myVertex.hasRefittedTracks()){
-                    // refitted tracks are TransientTracks
-                    // get updated momenta of refitted tracks
-                    // and recalculate K, pi and D0 quantities 
-                    int itcount = 0;
-                    vector<TransientTrack> tracks = myVertex.refittedTracks();
-                    for (vector<TransientTrack>::const_iterator trackIt = tracks.begin(); trackIt != tracks.end(); ++trackIt) {
-                      ++itcount;
-                      const Track & track = trackIt->track();
-                      if (itcount==1) {
-                        p4K1.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), Kmass);
-                        p4pi1.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), pimass);
-                      }
-		      else if (itcount==2) { 
-                        p4K2.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), Kmass);
-                        p4pi2.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), pimass);
-                      }		              
-	              // get four-vector, and from this pt, eta, phi, and mass 
-                      // (2 possible combinations)
-	              p4D012 = p4K1 + p4pi2;
-	              p4D021 = p4K2 + p4pi1;
-	              p4D0KK = p4K1 + p4K2;
-                      // the two masses can kinematically differ by up to a factor 
-                      // mK/mpi for very asymmetric momenta.
-                      // for completely symmetric momenta, they will be identical.
-                      // investigate cut on momentum asymmetry (costheta*)?
-	              mD012 = p4D012.M();
-	              mD021 = p4D021.M();
-	              mD0KK = p4D0KK.M();
-
-                      //cout << "Track pt: " << track.pt() << endl;
-                      //cout << it1->pt() << " " << it2->pt() << endl;
-                    }
-                  }  
-
-                  // get point of closest approach to beam spot 
-                  // *** to be calculated ***
-                  // for the moment, directly use D0 vertex position
-
-/////////////////////////// find best primary vertex /////////////////////////
-
-                  // loop over primary vertices
-                  // assume each track is only associated to one vertex
-                  //                             true? 
-                  // TrackRefs are CPU-expensive -> minimize
-
-                  // VtxCounter2 counts number of associated vertices found
-                  // 0 means no vertex association found
-                  // 1 means association found to one vertex (ideal)
-                  // 2 means the tracks are associated to different vertices 
-  		  VtxCounter2 = 0;
-                  // ivtx sets vertex index = unique id
-                  ivtx=-1;
-                  distzmin=999.;
-                  ivtxmin=-1;
-                  vtxidD0=-1;
-
-		  for (reco::VertexCollection::const_iterator ite = Primvertex->begin(); ite != Primvertex->end(); ++ite) {
-                    ++ivtx;
-			  // if (VtxFound2 && (d1 == mytracksforD0.begin() || d2 == mytracksforD0.begin()) ) {continue;}
-
-                    // get vertex distance in z *** update ***
-                    float distz = fabs(ite->z()-D0z);
-                    // skip if too far away
-                    if (distz > vdistzmax) continue;
-                    // should we apply quality cuts?
-                    if (ite->isFake() ||
-                        ite->ndof()<2 || fabs(ite->z()-Bsp_z)>20.) continue;
-                    //if (ite->isFake() || !ite->isValid() ||
-                    //    ite->ndof()<2 || fabs(ite->z()-Bsp_z)>20.) continue;
-                    // isFake means beam spot, isValid means fit converged
-                    // and result is within tracker boundaries (always true?), 
-                    // the last two are essentially no cut;
-                    // (ndof>4 for PVtx_isGood means >2 tracks)
-                    // use PVtx variables to cut harder offline if wished
-
-                    // save for later if closer than closest good vertex so far
-                    if (distz < distzmin) {
-                      distzmin = distz;
-                      ivtxmin = ivtx;
-                      itemin = ite;
-		      //cout << "ivtxmin " << ivtxmin << " distz " << distz << endl;
-                    }
-
-                    // loop over tracks from this vertex
-                    // (*** this will not work for miniAOD, 
-                    //  loop over Packed Candidates and use vertexRef! ***)
-                    // VtxCounter counts how many matches to D0 tracks have 
-                    // been found for this vertex. Should be 0, 1, or 2  
-		    VtxCounter = 0;
-#ifndef miniAOD
-		    for (reco::Vertex::trackRef_iterator iTrack = ite->tracks_begin(); iTrack != ite->tracks_end(); ++iTrack) {
-		      // get track reference	    
-		      const reco::TrackRef trackRef = iTrack->castTo<reco::TrackRef>();
-		      // loop over D0 tracks	    
-                      // VtxFound indicates that a D0 track is at this vertex
-                      VtxFound = false;
-                      int itcount = 0;
-		      for (vector<TransientTrack>::iterator gt1 = mytracksforD0.begin(); gt1 != mytracksforD0.end(); ++gt1) {
-                        ++itcount; 
-		        //cout<<"in  "<<(gt1->track()).pt()<<endl;
-                        // do not check if vertex already found
-                        if (itcount == 1 && t1vtxid >-1) continue;
-                        if (itcount == 2 && t2vtxid >-1) continue;
-                        // get track reference
-			const reco::TrackRef trackRef2 = (gt1->trackBaseRef()).castTo<reco::TrackRef>();
-			if (trackRef.get() == trackRef2.get()) {
-                          VtxFound = true;
-                          if (itcount == 1 && t1vtxid >-1) {
-                            // should never happen if track at one vertex only
-                            cout << "*** Alarm: track at more than one vertex?? ***" << endl;
-                            exit(1);
-                          }
-                          if (itcount == 1) t1vtxid = ivtx;
-                          else if (itcount == 2) t2vtxid = ivtx;
-                          else {
-                            cout << "*** nanoanalyzer: number of tracks inconsistent ***" << endl;
-                          } // else  
-                        } // trackref
-		      } // gt1
-		      if (VtxFound) {++VtxCounter;}
-                      // stop track loop if both tracks have been found at 
-                      // this vertex
-                      if (VtxCounter == 2) break;
-                      // or at two different vertices
-                      if (t1vtxid >-1 && t2vtxid >-1) break;
-		    } // itrack
-#endif
-#ifdef miniAOD
-                    // need to find out how to compare vertexref to iterator ...
-                    // *** the follwing needs cleanup ***
-                    //const reco::VertexRef iteRef = ite->castTo<reco::VertexRef>(); 
-                    //const reco::VertexRef iteRef = ite->Vertex();
-                    //const reco::VertexRef iteRef = (ite -> key);
-                    //const reco::VertexRef iteRef = ite->VertexRef(); 
-                    //if (ic1->vertexRef() == ite) {
-                    //if (ic1->vertexRef() == iteRef) {
-                    //if (ic1->vertexRef() == ite->first()) {
-                    //if (ic1->vertexRef() == (ite->key)) {
-                    // use z position as poor mans's solution; will equality always work? (rounding)
-                    if (ic1->vertexRef()->z() == ite->z()) {
-                      // make compiler happy ...
-                      if (VtxFound) cout << "blabla" << endl;
-                      ++VtxCounter;
-		      t1vtxid = ivtx; 
-                    }               
-		    if (ic2->vertexRef()->z() == ite->z()) {
-                      ++VtxCounter;
-		      t2vtxid = ivtx; 
-                    }               
-                    // debug printout
-                    //cout << "vertex z " << ite->z() << " " << ic1->vertexRef()->z() << " " << ic2->vertexRef()->z() << endl;   
-                    //cout << "vertex for first/2nd D0 track " << t1vtxid << " " << t2vtxid << endl;
-#endif 
-	            if (VtxCounter>0) VtxCounter2 = VtxCounter2+VtxCounter;
-                    // VtxFound2 indicates that match has been found
-                    // save vertex pointer 
-                    if (!VtxFound2 && VtxCounter > 0) {
-                      // this is the first vertex found, store it
-                      iteForD0 = ite; 		    
-                      vtxidD0 = ivtx;
-                      VtxFound2 = true;
-                    } // VtxCounter
-                    else if (VtxFound2 && VtxCounter > 0) {
-                      // this is the second vertex found
-                      // cout << "*** nanoanalyzer: vertex association inconsistent ***" << endl;
-                      ambiprimary = true; 
-                      // find out which is closer
-                      if (vtxidD0 == ivtxmin) {
-			// previous is minimal, keep previous, change nothing
-                        iteForD0 = iteForD0;
-                      }
-		      else if (ivtx == ivtxmin) {
-                        // current is closest, supersede
-                        iteForD0 = ite; 		    
-                        vtxidD0 = ivtx;
-                      }
-		      else {
-                        // if there is a minimum vertex
-                        // (should always be, since two vertices found)
-                        if (ivtxmin > -1) {
-                          // use current closest if in between iteForD0 and ite,
-                          // (use >= and <= to avoid problems with rare coincides)
-                          if ((itemin->z() >= iteForD0->z() && 
-                               itemin->z() <= ite->z()) ||  
-                              (itemin->z() <= iteForD0->z() && 
-                               itemin->z() >= ite->z())) {
-                            iteForD0 = itemin;
-                            vtxidD0 = ivtxmin;
-			  }
-                          // otherwise use the one closer to closest
-                          else if ((itemin->z() >= iteForD0->z() &&
-                                    iteForD0->z() >= ite->z()) ||
-                                   (itemin->z() <= iteForD0->z() && 
-                                    iteForD0->z() <= ite->z())) {
-                            // iteForD0 is closest to itemin
-                            iteForD0 = iteForD0;
-                          }
-                          else if ((itemin->z() >= ite->z() &&
-                                    ite->z() >= iteForD0->z()) ||
-                                   (itemin->z() <= ite->z() && 
-                                    ite->z() <= iteForD0->z())) {
-                            // ite is closest to itemin
-                            iteForD0 = ite;
-                            vtxidD0 = ivtx;
-                          }
-			  else {
-                            // should not happen
-                            cout << itemin->z() << " " << ite->z() << " " << iteForD0-> z() << endl;
-                            cout << "*** nanoAnalyzer: Alarm in vertexing logic 1 ***" << endl;
-                            exit(1);
-                          }
-                        } // ivtxmin
-			else {
-                          // should not happen
-                          cout << "*** nanoAnalyzer: Alarm in vertexing logic 2 ***" << endl;
-                          exit(1);
-                        } // ivtxmin  
-		      } // vtxidD0 
-		    } // vtxCounter
-                    // stop vertex loop if both tracks have been associated
-                    if (VtxCounter2 == 2) break;
-		  } // vertex loop
-	        } // mytracksforD0size
-
-                // loop over primary vertices and store sumntrk
-                for (uint pvtx = 0; pvtx<nPVtx; ++pvtx) {
-                  if (PVtx_Id[pvtx] == vtxidD0) PVtx_ntrk[pvtx] = sumntrk;
-                }  
-
-                // algorithm to calculate ambiprimary might be messed up before
-                // recalculate here:
-                if (t1vtxid==t2vtxid && t1vtxid > -1) ambiprimary = false;
-                else ambiprimary = true;
-
-                if (!VtxFound2) {
-                  // this should not any more always be the case for miniAOD
-                  //cout << "*** nanoanalyzer: no associated vertex found ***" << endl;
-		  // no vertex was associated to either track,
-                  // use closest if found
-                  ambiprimary = true;
-                  if (ivtxmin >-1) {
-                    iteForD0 = itemin;
-                    vtxidD0 = ivtxmin;
-                    VtxFound2 = true;
-                    //cout << "ivtxmin " << ivtxmin << "D0 " << vtxidD0 << endl;
-		  } // ivtxmin
-                  // otherwise leave VtxFound2 false, i.e. skip D0 candidate
-                } // VtxFound2
-
-		//cout << "KELUAR X 5? " << VtxFound2 << endl;
-
-		//		 // this part will reduce number of the loops
-		//		 // in "find out closest PV to this D0 tracks" part:
-		//		 if (VtxFound2) {		
-		//		   d1 = mytracksforD0.begin();
-		//		   d2 = ++d1;
-		//		 }
-		//		 // cout << "ATAU CRASH SINI 5?" << endl;
-
-/////////////////////////////////////////////////////////////////////////////
-                 // still need to treat case where no primary vertex was found
-                 // ignore? (as done now) or use beam spot? 
-                 if (VtxFound2) {
-                    // found 'best' primary for this vertex
-		    //cout << "hello vtxfound2 " << endl;
-                    // get position
-                    double xprim = iteForD0->position().x(); 
-                    double yprim = iteForD0->position().y(); 
-                    double zprim = iteForD0->position().z();
-                    //cout << "position" << endl;
-                    // calculate distance of tracks to primary
-                    // *** rather call it1->dxy(iteForD0)? (see mu_dxy) ***
-                    t1dxy = sqrt((it1->vx()-xprim)*(it1->vx()-xprim)
-		      + (it1->vy()-yprim)*(it1->vy()-yprim));
-                    t1dz = it1->vz()-zprim; 
-                    t2dxy = sqrt((it2->vx()-xprim)*(it2->vx()-xprim)
-		      + (it2->vy()-yprim)*(it2->vy()-yprim));
-                    t2dz = it2->vz()-zprim; 
-                    // calculate distance of D0 to primary
-                    double vdx = D0x - xprim;
-                    double vdy = D0y - yprim;
-                    double vdz = D0z - zprim; 
-		    double dist = sqrt(pow(vdx,2) + pow(vdy,2) + pow(vdz,2));
-		    double distxy = sqrt(pow(vdx,2) + pow(vdy,2));
-		    // get direction vector 
-		    double Dpx = p4D012.Px(); 
-		    double Dpy = p4D012.Py();
-                    double Dpz = p4D012.Pz();
-		    double Dp  = p4D012.P();
-		    double Dpt  = p4D012.Pt();
-		    // calculate 3D and 2D decay length
-                    dlD0 = (Dpx*vdx + Dpy*vdy + Dpz*vdz)/Dp;
-                    dlxyD0 = (Dpx*vdx + Dpy*vdy)/Dpt;
-                    //cout << "dlD0" << endl;
-		    // calculate cosphi
-		    cosphiD0 = dlD0/dist;
-		    cosphixyD0 = dlxyD0/distxy;
-		    // cut on cosphi (0.99)
-                    dlerrD0=0;
-                    dlsigD0=0;
-                    dlxyerrD0=0;
-                    dlxysigD0=0;
-                    //cout << "before position error" << endl;
-		    if (cosphiD0 > cosphimin) {
-                      // calculate significance in space
-                      // transient D0 vertex
-		      cov_sv[0][0] = myVertex.positionError().cxx();
-		      cov_sv[1][0] = myVertex.positionError().cyx();
-		      cov_sv[2][0] = myVertex.positionError().czx();
-                      cov_sv[0][1] = cov_sv[1][0];
-		      cov_sv[1][1] = myVertex.positionError().cyy();
-		      cov_sv[2][1] = myVertex.positionError().czy();
-                      cov_sv[0][2] = cov_sv[2][0];
-                      cov_sv[1][2] = cov_sv[2][1];
-		      cov_sv[2][2] = myVertex.positionError().czz();
-                      // primary vertex
-		      cov_pv[0][0] = iteForD0->covariance(0,0);
-		      cov_pv[1][0] = iteForD0->covariance(1,0);
- 		      cov_pv[2][0] = iteForD0->covariance(2,0);
-                      cov_pv[0][1] = cov_pv[1][0];
-		      cov_pv[1][1] = iteForD0->covariance(1,1);
-		      cov_pv[2][1] = iteForD0->covariance(2,1);
-                      cov_pv[0][2] = cov_pv[2][0];
-                      cov_pv[1][2] = cov_pv[2][1];
-		      cov_pv[2][2] = iteForD0->covariance(2,2);
-                      // distance direction unit vector
-                      deriv[0] = vdx/dist;
-                      deriv[1] = vdy/dist;
-                      deriv[2] = vdz/dist;
-                      // decay length error
-                      dlerr=0;
-                      for (int m=0; m<3; ++m){
-                        for (int n=0; n<3; ++n){
-                          dlerr += deriv[m]*deriv[n]*(cov_pv[m][n]+cov_sv[m][n]);
-		        } // end for
-		      } // end for
-		      dlerrD0 = sqrt(dlerr);
-		      // decay length significance
-                      dlsigD0 = dlD0/dlerrD0;
-
-                      // decay length error in xy
-                      dlxyerr=0;
-                      for (int m=0; m<2; ++m){
-                        for (int n=0; n<2; ++n){
-                          dlxyerr += deriv[m]*deriv[n]*(cov_pv[m][n]+cov_sv[m][n]);
-		        } // end for
-		      } // end for
-		      dlxyerrD0 = sqrt(dlxyerr);
-		      // decay length significance
-                      dlxysigD0 = dlxyD0/dlxyerrD0;
-     
-                    } // end of cosphi cut
-                 } // end of if VtxFound2
-
-                 // calculate the decay length and get the vertex chi2
-   //  		 DLxD0 = 0; DLyD0 = 0; dlxyD0 = 0;
-   //            chi2D0 = 999.;
-                 //cout << "before valid" << endl; 
-   		 
-                 if (myVertex.isValid() && VtxFound2) {
-   //			
-   //		   DLxD0 = (myVertex.position()).x() - iteForD0->x();
-   //		   DLyD0 = (myVertex.position()).y() - iteForD0->y();
-   //		   dlxyD0 = ((paxisD0[0] * DLxD0) + (DLyD0 * paxisD0[1])) / (p4D012.Pt());
-			// DLmodD0 = sqrt(DLxD0*DLxD0 + DLyD0*DLyD0);
-/*  From workbook:
-    Although TransientVertex::originalTracks().size() will tell you the number of tracks in the vertex, many of these may have very small weights, meaning that they are unlikely to belong to it. Therefore you should check the individual tracks weights using TransientVertex::trackWeight(trk).
-    TransientVertex::degreesOfFreedom() is defined as twice the sum of the tracks weights minus 3. If many of the track weights are small, this can be negative ! Similarly, the vertex chi2 is calculated including the weights. It can therefore be very different from that obtained using a KalmanVertexFit. There is no good reason why it should have a chi2 distribution.
-    Vertices will only be kept if at least two tracks have weights exceeding parameter weightthreshold. Note that some of the found vertices may therefore have many/all tracks with very small weights. These should be treated with some distrust.
-
- The vertex returned may not be valid in some cases. The user had to check the validity of the vertex with the method isValid(). In each case, an error message is put into the log:
-
-    The maximum number of iterations is exceeded
-    The fitted position is out of the tracker bounds
-    Too many tracks have been downweighted, and fewer than two significant tracks remain.   
-*/
-		   // preliminary, does not look very useful
-		   // chi2DstarD0 = myVertex.degreesOfFreedom();
-                   chi2D0 = myVertex.totalChiSquared();
-
-		 }
-		 // good!!! 
-
-                 //cout << "after valid" << endl; 
-	     
-              // go to the next pair in loop here if no useful vertex was found
-              // does not seem to reject anything?  
-	      if (!(myVertex.isValid() && VtxFound2)) continue;
-
-              // calculate rapidity
-              rapD0 = log((sqrt(mD0Actual*mD0Actual+p4D012.P()*p4D012.P())+p4D012.Pz())/(sqrt(mD0Actual*mD0Actual+p4D012.P()*p4D012.P())-p4D012.Pz()))/2.;
-
-              // check whether D0 candidate uses muons
-              bool hasmuD0 = false;
-              for (uint mm = 0; mm<nMuon; ++mm) {
-                if (it1count == Muon_trkIdx[mm] || it2count == Muon_trkIdx[mm]) hasmuD0 = true;
-              }
-
-              // get dEdx info (Giacomo Fedi, mail CERN 12.6.19)
-	      //Is the dedx collection available in AOD? this is the code we used in Run1:
-	      //  Handle<DeDxDataValueMap> energyLossHandle;
-	      //  iEvent.getByLabel("dedxHarmonic2", energyLossHandle);
-	      //  const DeDxDataValueMap &  eloss  = *energyLossHandle;
-	      //  double dedxTrk = eloss[trk1Ref].dEdx();
-	      //  double errdedxTrk = eloss[trk1Ref].dEdxError();
-	      //  int NumdedxTrk = eloss[trk1Ref].numberOfMeasurements();
-              // and this is something more recent
-              //  https://cmssdt.cern.ch/lxr/source/DQM/TrackingMonitor/src/dEdxAnalyzer.cc#0172
-	      //   if (doDeDxPlots_ || doAllPlots_) {
-	      //0162     edm::Handle<reco::TrackCollection> trackCollectionHandle;
-	      //0163     iEvent.getByToken(trackToken_, trackCollectionHandle);
-	      //0164     if (!trackCollectionHandle.isValid())
-	      //0165       return;
-	      //0166 
-	      //0167     for (unsigned int i = 0; i < dEdxInputList_.size(); i++) {
-	      //0168       edm::Handle<reco::DeDxDataValueMap> dEdxObjectHandle;
-	      //0169       iEvent.getByToken(dEdxTokenList_[i], dEdxObjectHandle);
-	      //0170       if (!dEdxObjectHandle.isValid())
-	      //0171         continue;
-	      //0172       const edm::ValueMap<reco::DeDxData> dEdxColl = *dEdxObjectHandle.product();
-	      //0173 
-	      //0174       for (unsigned int t = 0; t < trackCollectionHandle->size(); t++) {
-	      //0175         reco::TrackRef track = reco::TrackRef(trackCollectionHandle, t);
-	      //0176 
-	      //0177         if (track->quality(reco::TrackBase::highPurity)) {
-	      //0178           //MIPs
-	      //0179           if (track->pt() >= 5.0 && track->numberOfValidHits() > TrackHitMin) {
-	      //0180             dEdxMEsVector[i].ME_MipDeDx->Fill(dEdxColl[track].dEdx());
-	      //0181             dEdxMEsVector[i].ME_MipDeDxNHits->Fill(dEdxColl[track].numberOfMeasurements());
-	      //0182             if (dEdxColl[track].numberOfMeasurements() != 0)
-	      //0183               dEdxMEsVector[i].ME_MipDeDxNSatHits->Fill((1.0 * dEdxColl[track].numberOfSaturatedMeasurements()) 
-	      //0184                                                         dEdxColl[track].numberOfMeasurements());
-	      //0185             dEdxMEsVector[i].ME_MipDeDxMass->Fill(mass(track->p(), dEdxColl[track].dEdx()));
-	      //0186 
-	      //0187             if (track->pt() >= HighPtThreshold) {
-	      //0188               dEdxMEsVector[i].ME_MipHighPtDeDx->Fill(dEdxColl[track].dEdx());
-	      //0189               dEdxMEsVector[i].ME_MipHighPtDeDxNHits->Fill(dEdxColl[track].numberOfMeasurements());
-	      //0190             }
-	      //0191 
-	      //0192             //HighlyIonizing particles
-	      //0193           } else if (track->pt() < 2 && dEdxColl[track].dEdx() > HIPdEdxMin) {
-	      //0194             dEdxMEsVector[i].ME_HipDeDxMass->Fill(mass(track->p(), dEdxColl[track].dEdx()));
-	      //0195           }
-	      //0196         }
-	      //0197       }
-	      //0198     }
-	      //0199   }
-	      //and the name of the collection is: "dedxHarm2"
-              
-              // A.G.: Have seen dEdx info from miniAOD somewhere?
-
-              // print out interesting candidates
-              if (Bingo == 1 && mD012 > mD0tmin && mD012 < mD0tmax) {
-                cout << "event " << event << " D0 " << mD012 << " pt " << p4D012.Pt() << " eta " << p4D012.Eta() << " phi " << p4D012.Phi() << " z " << zD0 << " dl " << dlD0 << " signif " << dlsigD0 << " cosphi " << cosphiD0 << endl;
-              }
-              if (Bingo == 1 && mD021 > mD0tmin && mD021 < mD0tmax) {
-                cout << "event " << event << " D0 " << mD021 << " pt " << p4D021.Pt() << " eta " << p4D021.Eta() << " phi " << p4D021.Phi() << " z " << zD0 << " dl " << dlD0 << " signif " << dlsigD0 << " cosphi " << cosphiD0 << endl;
-              }
-
-              // check for associated simulated D0 from prestored list
-              simidD0 = -1;
-              t1pdgid = 0;
-              t2pdgid = 0;
-              if (Bingo) {
-                cout << "nD0sim " << nD0sim << endl;
-                if (nD0sim>0) {
-                  cout << "pts " << ptD0sim[0] << " eta " << etaD0sim[0] << " phi " << phiD0sim[0] << endl;
-                  cout << "pt " << p4D012.Pt() << " eta " << p4D012.Eta() << " phi " << p4D012.Phi() << endl;
-                  cout << "pts1 " << ptD0t1sim[0] << " eta " << etaD0t1sim[0] << " phi " << phiD0t1sim[0] << " charge " << chgD0t1sim[0] << endl;
-                  cout << "pts2 " << ptD0t2sim[0] << " eta " << etaD0t2sim[0] << " phi " << phiD0t2sim[0] << " charge " << chgD0t2sim[0] << endl;
-                  cout << "pt1 " << it1->pt() << " eta " << it1->eta() << " phi " << it1->phi() << " charge " << it1->charge() << endl;
-                  cout << "pt2 " << it2->pt() << " eta " << it2->eta() << " phi " << it2->phi() << " charge " << it2->charge() << endl;
-                }
-              }
-              for (int iD0=0; iD0<nD0sim; ++iD0) {
-                if (abs(p4D012.Pt()-ptD0sim[iD0])/ptD0sim[iD0] < 0.2 && abs(p4D012.Eta()-etaD0sim[iD0])<0.3 && fmod(abs(p4D012.Phi()-phiD0sim[iD0]),2.*pi)<0.3) {
-#ifdef Bingo
-                  cout << "D0 found" << endl;
-#endif
-                  if (it1->charge()==chgD0t1sim[iD0] && it2->charge()==chgD0t2sim[iD0]) {
-                    // first charge alternative
-                    if (abs(it1->pt()-ptD0t1sim[iD0])/ptD0t1sim[iD0] < 0.2 && abs(it1->eta()-etaD0t1sim[iD0])<0.3 && fmod(abs(it1->phi()-phiD0t1sim[iD0]),2.*pi)<0.3 && abs(it2->pt()-ptD0t2sim[iD0])/ptD0t2sim[iD0] < 0.2 && abs(it2->eta()-etaD0t2sim[iD0])<0.3 && fmod(abs(it2->phi()-phiD0t2sim[iD0]),2.*pi)<0.3) {
-                      simidD0 = idD0sim[iD0];
-                      t1pdgid = pdgIdD0t1sim[iD0];
-                      t2pdgid = pdgIdD0t2sim[iD0];
-#ifdef Bingo
-                      cout << "D0 identified " << mD012 << " " << mD021 << " " << mD0KK << " " << pdgIdD0t1sim[iD0] << " " << pdgIdD0t2sim[iD0] << endl;
-#endif
-                      break;
-		    }
-		  }
-                  else if (it2->charge()==chgD0t1sim[iD0] && it1->charge()==chgD0t2sim[iD0]) {
-                    // second charge alternative
-                    if (abs(it2->pt()-ptD0t1sim[iD0])/ptD0t1sim[iD0] < 0.2 && abs(it2->eta()-etaD0t1sim[iD0])<0.3 && fmod(abs(it2->phi()-phiD0t1sim[iD0]),2.*pi)<0.3 && abs(it1->pt()-ptD0t2sim[iD0])/ptD0t2sim[iD0] < 0.2 && abs(it1->eta()-etaD0t2sim[iD0])<0.3 && fmod(abs(it1->phi()-phiD0t2sim[iD0]),2.*pi)<0.3) {
-                      simidD0 = idD0sim[iD0];
-                      t1pdgid = pdgIdD0t1sim[iD0];
-                      t2pdgid = pdgIdD0t2sim[iD0];
-#ifdef Bingo
-                      cout << "D0 identified " << mD012 << " " << mD021 << " " << mD0KK << " " << pdgIdD0t1sim[iD0] << " " << pdgIdD0t2sim[iD0] << endl;
-#endif
-                      break;
-		    }
-		  }
-                  else if (it1->charge()==it2->charge() && it1->charge()==chgD0t2sim[iD0]) {
-                    // allow also wrong charge to check fake rate (should we use both combinations?)
-                    if (abs(it2->pt()-ptD0t1sim[iD0])/ptD0t1sim[iD0] < 0.2 && abs(it2->eta()-etaD0t1sim[iD0])<0.3 && fmod(abs(it2->phi()-phiD0t1sim[iD0]),2.*pi)<0.3 && abs(it1->pt()-ptD0t2sim[iD0])/ptD0t2sim[iD0] < 0.2 && abs(it1->eta()-etaD0t2sim[iD0])<0.3 && fmod(abs(it1->phi()-phiD0t2sim[iD0]),2.*pi)<0.3) {
-                      simidD0 = idD0sim[iD0];
-                      t1pdgid = pdgIdD0t1sim[iD0];
-                      t2pdgid = pdgIdD0t2sim[iD0];
-#ifdef Bingo
-                      cout << "fake D0 identified " << mD012 << " " << mD021 << " " << mD0KK << " " << pdgIdD0t1sim[iD0] << " " << pdgIdD0t2sim[iD0] << endl;
-#endif
-                      break;
-		    }
-		  }
-		}
-              }
-
-              bool storeD0 = false;  // flag whether D0 candidate is stored
-	      if (D0_pt.size() < nReserve_D0) {
-
-		// fill unlike sign (only), if extra cuts satisfied
-                // store both positive and negative dl to allow mirroring
-		if (((mD012 > mD0min && mD012 < mD0max) ||
-		     (mD021 > mD0min && mD021 < mD0max)) &&
-		    it1->charge() != it2->charge() && 
-                    abs(dlxyD0)>dlxyD0min && abs(dlsigD0)>dlsigD0min) {
-		storeD0 = true;
-		D0t1_pt.push_back(it1->pt());
-		D0t1_eta.push_back(it1->eta());
-		D0t1_phi.push_back(it1->phi());
-		D0t1_chg.push_back(it1->charge());
-		//D0t1_tkIdx.push_back(-9999);
-		D0t1_tkIdx.push_back(it1count);
-		D0t1_Kprob.push_back(t1Kprob);    // temporarily strip
-		D0t1_piprob.push_back(t1piprob);  // temporarily error or pix
-                D0t1_dEdxnmeas.push_back(dedxtrknmeas);
-                D0t1_dEdxnsat.push_back(dedxtrknsat);
-		D0t1_vtxIdx.push_back(t1vtxid);
-		D0t1_chindof.push_back(t1chindof);
-		D0t1_nValid.push_back(t1nvalid);
-		D0t1_nPix.push_back(t1npix);
-		D0t1_isHighPurity.push_back(t1highp);
-		D0t1_dxy.push_back(t1dxy);
-		D0t1_dz.push_back(t1dz);
-                D0t1_pdgId.push_back(t1pdgid);
-
-		D0t2_pt.push_back(it2->pt());
-		D0t2_eta.push_back(it2->eta());
-		D0t2_phi.push_back(it2->phi());
-		D0t2_chg.push_back(it2->charge());
-		//D0t2_tkIdx.push_back(-9999);
-		D0t2_tkIdx.push_back(it2count);
-		D0t2_Kprob.push_back(t2Kprob);
-		D0t2_piprob.push_back(t2piprob);
-                D0t2_dEdxnmeas.push_back(dedxtrk2nmeas);
-                D0t2_dEdxnsat.push_back(dedxtrk2nsat);
-		D0t2_vtxIdx.push_back(t2vtxid);
-		D0t2_chindof.push_back(t2chindof);
-		D0t2_nValid.push_back(t2nvalid);
-		D0t2_nPix.push_back(t2npix);
-		D0t2_isHighPurity.push_back(t2highp);
-		D0t2_dxy.push_back(t2dxy);
-		D0t2_dz.push_back(t2dz);
-                D0t2_pdgId.push_back(t2pdgid);
-
-		// D0
-		D0_pt.push_back(p4D012.Pt());
-		D0_eta.push_back(p4D012.Eta());
-		D0_phi.push_back(p4D012.Phi());
-		D0_rap.push_back(rapD0);
-		D0_mass12.push_back(mD012);
-		D0_mass21.push_back(mD021);
-		D0_massKK.push_back(mD0KK);
-		D0_simIdx.push_back(simidD0);
-                D0_DstarIdx.push_back(-1); // might be superseded later
-                // will contain pointer to last reconstructed Dstar for D0 
-                D0_ambiPrim.push_back(ambiprimary);
-		D0_vtxIdx.push_back(vtxidD0);
-		D0_hasMuon.push_back(hasmuD0);
-                D0_chi2.push_back(chi2D0);
-		D0_dlxy.push_back(dlxyD0);
-		D0_dlxyErr.push_back(dlxyerrD0);
-		D0_dlxySig.push_back(dlxysigD0);
-		D0_cosphixy.push_back(cosphixyD0);
-		D0_dl.push_back(dlD0);
-		D0_dlErr.push_back(dlerrD0);
-		D0_dlSig.push_back(dlsigD0);
-		D0_cosphi.push_back(cosphiD0);
-		D0_ptfrac.push_back(zD0);
-		D0_ptfrac15.push_back(zD015);
-		D0_ptfrac10.push_back(zD010);
-		D0_ptfrac07.push_back(zD007);
-		D0_ptfrac04.push_back(zD004);
-		D0_x.push_back(D0x);
-		D0_y.push_back(D0y);
-		D0_z.push_back(D0z);
-		D0_Covxx.push_back(cov_sv[0][0]);
-		D0_Covyx.push_back(cov_sv[1][0]);
-		D0_Covzx.push_back(cov_sv[2][0]);
-		D0_Covyy.push_back(cov_sv[1][1]);
-		D0_Covzy.push_back(cov_sv[2][1]);
-		D0_Covzz.push_back(cov_sv[2][2]);
-               }
-	      }
-	      else {cout << "WARNING!!!!! NO. OF D0 IS MORE THAN YOUR RESERVED NO.!!!!!!" << endl;}
-              nD0 = D0_pt.size();
-
-	      ///////////////////////
-              ////     now D*    ////
-              ///////////////////////
-
-
-	      // check for track collection with at least 3 tracks (for Dstar)
-              // reconstructing D*'s with D0 pt < 1 is hopeless (slow pion) 
-	      if (tracks->size() >= trkminDstar && p4D012.Pt()>DstarD0ptmin) {
-
-		//--- 3rd loop:over tracks assuming they are slow pions ---//
-                // no vertex requirement since slow piosn are often not 
-                // associated to primary, and actually should not be 
-                // if D*s from B are to be included 
-                int it3count = -1;
-
-#ifndef miniAOD
-                // loop over AOD track collection
-		for (reco::TrackCollection::const_iterator itPS3 = tracks->begin(); itPS3 != tracks->end() ; ++itPS3) {
-                  ++it3count;
-#endif
-
-#ifdef miniAOD
-                // loop over both PackedCandidates 
-                //            and lost track miniAOD collections
-		// assume that standard collection is always larger than "lost" collection
-		// cout << "tracks " << tracks->size() << " lost " << lostTracks->size() << endl;
-		// alternatingly provide "good" and "lost" tracks, as long as there are any
-                // initialize "lost" tracks
-                bool lostended = false;
-                pat::PackedCandidateCollection::const_iterator iclost = lostTracks->begin();
-                if (iclost == lostTracks->end()) lostended = true;
-                // loop over "good" tracks
-		for (pat::PackedCandidateCollection::const_iterator icPS3 = tracks->begin(); icPS3 != tracks->end() ; ++icPS3) {
-                  ++it3count;
-                 // actually, the following shows that low pt tracks are 
-                 // stored if associated to a vertex, but only few details 
-                 // available. Find vertex and compare to D0 vertex?
-		 //if (icPS3->charge()!=0) {
-                 //  cout << icPS3->pt() << endl;
-                 //  cout << icPS3->vertexRef()->z() << endl;
-                 //  cout << icPS3->pvAssociationQuality() << endl;
-		 // pvAssociationQuality() method returns the quality of PV-candidate association, in particular (please note that in the following the PV means the associated PV returned by vertexRef()):
-
-		 // UsedInFitTight = 7: the track is used in the PV fit and the weight is above 0.5 -> OK
-		 // UsedInFitLoose = 6: the track is used in the PV fit and the weight is below 0.5 -> OK
-		 // CompatibilityDz = 5: the track is not used in fit but is very close in dZ to the PV (significance of dZ < 5 and dZ < 1mm). This is used only if the track dz uncertainty is below 500um. -> OK
-		 // CompatibilityBTag =4: the track is not compatible with the PV but it is close to the nearest jet axis starting from the PV (distance to jet axis < 700um). This is used only if the track dz uncertainty is below 500um. -> OK but will work only in case of jet
-		 // NotReconstructedPrimary = 0: the track is not associated to any PV and is compatible with the BeamSpot hence it is likely to be originating from an interaction for which we did not reconstruct the PV (beamspot compatiblity: dxy sig < 2sigma and dxy < 200um) -> not useful?
-                 // OtherDeltaZ = 1: none of the above criteria is satisfied, hence the closest in dZ vertex is associated -> not useful?
-                 // require icPS3->pvAssociationQuality() > 1?
-                 //     no -> will catch only primary vertex ... 
-		 //}  // ICPS3
-                 // icPS3->dz() gives dz to main PV, not to actual PV!
-                 //
-                 // loop over "good" and "lost" track alternatives 
-		 for (int ialt = 1; ialt<3; ++ialt) {
-		   //if (!(icPS3->hasTrackDetails())) continue;
-		   //auto tkPS3 = icPS3->pseudoTrack();
-		  auto itPS3 = icPS3->bestTrack(); 
-		  if (ialt == 1) {    
-                    // use "good" track unless null
-                    //if (itPS3 != nullptr)
-         	    //   cout << ialt << " pt pis " << itPS3->pt() << endl; 
-                    // actually, use all PF candidates!
-                  }
-		  else if (!lostended) {
-                    // use "lost" track, if any remain 
-                    // this seems to have a pt cut of 0.5 GeV, and higher for track info, do we need these at all?  
-         	    // if (iclost->charge()!=0) cout << ialt << " pt pis c " << iclost->pt() << endl; 
-         	    //if (!(iclost->hasTrackDetails())) continue;
-                    //tkPS3 = iclost->pseudoTrack();
-		    itPS3 = iclost->bestTrack(); 
-                    ++iclost;
-                    if (iclost == lostTracks->end()) lostended = true; 
-                    //if (itPS3 != nullptr)
-         	    //  cout << ialt << " pt pis " << itPS3->pt() << endl; 
-                    // again, use all candidates
-                  }
-                  else continue;
-#endif
-
-                  // replace the variables used below by variables precomputed 
-                  // above, separately for the AOD and miniAOD case?
-                  // three categories:
-                  //  - tracks with details (covariance)
-                  //  - tracks without details (hits and position)
-                  //  - four-vector and vertex ref + flag only
-    
-                  float t3pt, t3ptr;
-#ifndef miniAOD
-                  // track iterator always defined on AOD
-                  t3pt = itPS3->pt();
-#endif
-#ifdef miniAOD
-                  // on miniAOD, check whether track pointer exists and how
-                  if (itPS3 != nullptr) {
-                    // track defined
-		    // check that it is not t1 or t2		    
-		    if (itPS3 == it1 || itPS3 == it2)  continue;
-                    //cout << "hello it1it2" << endl; 
-                    t3pt = itPS3->pt(); 
-                  }
-                  else {
-                    // no track defined, PF candidate, require charged
-                    if (icPS3->charge() == 0) continue;
-                    //cout << "hello notrack" << endl;
-                    // check that the surviving tracks are all 'Pions' (+-211) 
-                    // cout << icPS3->pdgId() << endl;  // they are!
-                    t3pt = icPS3->pt(); 
-                  }
-#endif
-
-		    // cut on absolute pis pt
-		    if (t3pt < ptpismin) continue;
-                    //cout << "hello ptpismin " << t3pt << endl; 
-
-                    // also cut on pis/D0 pt ratio
-                    // always lies between .032 and 0.18
-                    // (mpi/mD0 = 0.075)
-                    if (t3pt/p4D012.Pt() < .03) continue; 
-                    if (t3pt/p4D012.Pt() > .20) continue;
-                    // for B0 -> D0pi, ask for pt>1 and pi/D0 pt > 0.33 ?
-
-                    // store track quality variables //
-                    int t3vtxid = -1;
-                    float t3chindof;
-                    int t3nvalid;
-                    int t3npix;
-                    float t3x;
-                    float t3y;
-                    float t3z;
-                    float t3charge;
-                    float t3eta, t3etar;
-                    float t3phi, t3phir;
-#ifndef miniAOD
-                    t3chindof = itPS3->chi2()/itPS3->ndof();
-                    t3nvalid = itPS3->hitPattern().numberOfValidHits();
-                    t3npix = itPS3->hitPattern().numberOfValidPixelHits();
-                    t3x = itPS3->vx();  
-                    t3y = itPS3->vy();  
-                    t3z = itPS3->vz();
-                    t3charge = itPS3->charge();
-                    t3eta = itPS3->eta();
-                    t3phi = itPS3->phi();
-#endif
-#ifdef miniAOD
-		    if (itPS3 != nullptr) {
-                      // (reduced) track info exists (pt>0.4)
-                      t3chindof = itPS3->normalizedChi2();
-                      t3nvalid = itPS3->hitPattern().numberOfValidHits();
-                      t3npix = itPS3->hitPattern().numberOfValidPixelHits();
-                      t3x = itPS3->vx();  
-                      t3y = itPS3->vy();  
-                      t3z = itPS3->vz();
-                      t3charge = itPS3->charge();
-                      t3eta = itPS3->eta();
-                      t3phi = itPS3->phi();
-                    }
-		    else {
-                      // no (reduced) track info for this PF candidate (pt<0.4)
-                      t3chindof = - icPS3->pvAssociationQuality();
-                      t3nvalid = 0;
-                      t3npix = 0;
-                      // position of associated vertex, not track, 
-                      // even if track is far away from it 
-                      // -> increased background!
-                      t3x = icPS3->vertexRef()->x(); 
-                      t3y = icPS3->vertexRef()->y();  
-                      t3z = icPS3->vertexRef()->z();
-                      t3charge = icPS3->charge();
-                      t3eta = icPS3->eta();
-                      t3phi = icPS3->phi();
-                    }    
-#endif
-
-                    float t3piprob = -9999.;
-                    float t3Kprob = -9999.;
-                    int dedxtrk3nmeas = -9999;
-                    int dedxtrk3nsat = -9999;
-
-#ifndef CMSSW7plus
-                    // for dEdx (from example by G. Fedi)
-                    // beware of potential slowdown!
-	            reco::TrackRef trackRef = reco::TrackRef(tracks,it3count);   
-                    double dedxtrk = (*energyLossHandle)[trackRef].dEdx();
-                    double dedxtrkerr = (*energyLossHandle)[trackRef].dEdxError();
-                    dedxtrk3nsat = (*energyLossHandle)[trackRef].numberOfSaturatedMeasurements();
-                    dedxtrk3nmeas = (*energyLossHandle)[trackRef].numberOfMeasurements();
-                    // temporarily "misuse" the piprob and Kprob variables for direct dEdx:
-                    t3piprob = dedxtrkerr;    
-                    t3Kprob = dedxtrk;
-#endif    
-#ifdef CMSSW7plus
-                    // for dEdx (from example by M. Soares)
-                    // beware of potential slowdown!
-	            reco::TrackRef trackRef = reco::TrackRef(tracks,it3count);  
-                    double stripMapdedx = ( stripmap >0 ? (*dedxStMap)[trackRef].dEdx() : 0.);
-                    double pixMapdedx = ( pixmap >0 ? (*dedxPixMap)[trackRef].dEdx() : 0.);
-                    // temporarily "misuse" the piprob and Kprob variables for direct dEdx:
-                    t3piprob = pixMapdedx;    
-                    t3Kprob = stripMapdedx;    
-                    dedxtrk3nsat = ( stripmap >0 ? (*dedxStMap)[trackRef].numberOfSaturatedMeasurements() : 0.);
-	            dedxtrk3nmeas = ( stripmap >0 ? (*dedxStMap)[trackRef].numberOfMeasurements() : 0.);
-#endif
-
-
-                    // this would be the place to cut on these variables, if wished! //
-                    
-		    vc2[0] = abs(vcD0[0] - t3x);
-		    vc2[1] = abs(vcD0[1] - t3y);
-                    float t3dxy = sqrt((vc2[0] * vc2[0]) + (vc2[1] * vc2[1]));
-		    vc2[2] = abs(vcD0[2] - t3z);
-                    float t3dz = vcD0[2] - t3z;
- 		    //cout << "ATAU CRASH SINI 2.5?" << endl;
-
-		    // check the slow pion originates from the same region as the D0
-		    if (t3dxy < vD0pis_xymax && fabs(t3dz) < vD0pis_zmax) {
-			
-		      // Calc 4 momentum for slow pion using TLorentzVector
-		      p4pis.SetPtEtaPhiM(t3pt, t3eta, t3phi, pimass);
-
-                      // determine which is Kaon and which is pion 
-                      // depending on pis charge, and recut on mass
-                      // keep K-pi+pis+, K+pi-pis- (right sing)
-                      // and  K-pi-pis+, K+pi+pis- (wrong sign)
-                      // i.e. pis always has opposite sign to Kaon
-                      // in wrong sign case, use both possible combinations
-                      int Kis = 0;
-                      if (t3charge != it1->charge()) {
-                        if (t3charge == it2->charge()) { 
-                        // first track is Kaon candidate (right sign) 
-                          Kis = 1;
-                          p4DstarD0 = p4D012;
-                          if (mD012 < mD0min1 || mD012 > mD0max1) continue;
-                        }
-                        else {
-			// wrong sign, allow both K pi combinations if satisfied
-                          if (mD012 > mD0min1 && mD012 < mD0max1) {
-                            // first satisfies mass cuts
-                            Kis = 1;
-                            p4DstarD0 = p4D012;
-                            if (mD021 > mD0min1 && mD021 < mD0max1) {
-			      // both satisfied, default is first, need special treatment for second
-			      Kis =12;
-			    }
-                          }
-			  else if (mD021 > mD0min1 && mD021 < mD0max1) {
-                            // 2nd satisfies mass cuts
-                            Kis = 2;
-                            p4DstarD0 = p4D021;
-                          }
-                          else {
-                            // none satisfies mass cuts
-                            continue; 
-                          }
-			}
-                      }
-		      else if (t3charge != it2->charge()) { 
-                        // second track is kaon candidate (right sign)
-                        Kis = 2;
-                        p4DstarD0 = p4D021;
-                        if (mD021 < mD0min1 || mD021 > mD0max1) continue;
-                      }
-		      else {
-                        // all three have same sign, reject
-                        continue;
-		      } 
-		      p4Dstar = p4DstarD0 + p4pis;
-                      // the 2nd just in case;	  
-                      if (Kis==12) p4Dstar2 = p4D021 + p4pis;
-                      // cout << " Kis " << Kis << " event " << event << " " << (event/2)*2 << endl;
-
-                      // calculate rapidy
-                      rapDstar = log((sqrt(mDstarActual*mDstarActual+p4Dstar.P()*p4Dstar.P())+p4Dstar.Pz())/(sqrt(mDstarActual*mDstarActual+p4Dstar.P()*p4Dstar.P())-p4Dstar.Pz()))/2.; 
-
-		      // calculate D*-D0 mass difference;
-		      deltam = (p4Dstar.M()) - p4DstarD0.M();
-                      deltam2 = 9999.;
-                      // the 2nd just in case;	  
-		      if (Kis==12) deltam2 = (p4Dstar2.M()) - p4D021.M();	  
-
-                      // apply cut
-		      if (deltam > dmDstarmax && deltam2 > dmDstarmax) continue;
-
-		      // cout << "KELUAR X 3?" << endl;
-
-                      // should be moved outside loop when vertex available
-                      // shouldn't sumpt1 and sumpt2 be the same?
-                      // i.e., is it necessary to recalculate?
-		      sumpt2=0;
-#ifndef miniAOD
-		      for (reco::TrackCollection::const_iterator itSum2 = tracks->begin(); itSum2 != tracks->end(); ++itSum2) {
-#endif
-#ifdef miniAOD
-		      for (pat::PackedCandidateCollection::const_iterator icSum2 = tracks->begin(); icSum2 != tracks->end(); ++icSum2) {
-         		if (!(icSum2->hasTrackDetails())) continue;
-                        auto itSum2 = icSum2->bestTrack(); 
-                        if (itSum2 == nullptr) continue;
-#endif
-			// check track origins
-			vc3[0] = abs(vcD0[0] - itSum2->vx());
-			vc3[1] = abs(vcD0[1] - itSum2->vy());
-			vc3[2] = abs(vcD0[2] - itSum2->vz());
-		
-			if ((sqrt(vc3[0] * vc3[0]) + (vc3[1] * vc3[1])) < vD0trksum_xymax && vc3[2] < vD0trksum_zmax) {
-			  
-			  sumpt2 += abs(itSum2->pt()); // sum pt for all tracks
-			} // end of Sumpt vertex check
-		      } // end of itSum loop
-
-		      // variable z for Dstar and D0 from Dstar
-		      // old: zDstarD0 = (p4D0.Pt()) / sumpt2;
-	              zD0 = (it1->pt() + it2->pt()) / sumpt2;
-		      // old: zDstar = (p4Dstar.Pt()) / sumpt2;
-	              zDstar = (it1->pt() + it2->pt() + t3pt) / sumpt2;
-
-		      // cut on z
-                      if (zDstar < zDstarmin) continue; 
-
-		      // cout << "KELUAR X 4?" << endl;
-
-		    // initialize
-                    t3ptr = -1.;
-                    t3etar = 9999.;
-                    t3phir = 9999.;
-                    deltamr = -1.; 
-                    deltamr2 = -1.; 
-
-#ifdef miniAOD
-                  if (icPS3->hasTrackDetails()) {
-#endif
-		    // make the pislow more precise by fitting it to the 
-                    // primary vertex (appropriate for primary D*)
-		    // (CPU intensive! -> after all cuts)
-
-                    // currently this uses a fudged variant of the beam 
-                    // constraint
-                    // could/should use SingleTrackVertexConstraint instead
-//     https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideVertexFitTrackRefit
-
-		    //cout << "pislow before: " << t3pt << " " << t3eta << " " << t3phi << endl; 
-
-         	    // build pislow track collection for revertexing
-		    mytracksforpislow.clear();
-#ifndef miniAOD
-                    // loop over prebuilt list of AOD transient tracks
-         	    for (vector<TransientTrack>::iterator gt_trans = genralTracks_forD.begin(); gt_trans != genralTracks_forD.end(); ++gt_trans) {
-					
-		      const reco::TrackRef trackRef1 = (gt_trans->trackBaseRef()).castTo<reco::TrackRef>();
-		      if (&*itPS3 == trackRef1.get()) {			    
-		        TransientTrack  transientTrack1 = theB->build(trackRef1);
-		        mytracksforpislow.push_back(transientTrack1);
-		      }
-		    }
-#endif
-#ifdef miniAOD 
-                    // build transient track from relevant miniAOD pseudotrack
-	            TransientTrack  transientTrack1 = theB->build(icPS3->pseudoTrack());
-		    mytracksforpislow.push_back(transientTrack1);
-#endif              
-
-                    // want to fit track to primary vertex, but Fitter does not 
-                    // seem to allow to pass a vertex constraint
-                    // -> "misuse" bem spot constraint instead 
-
-                    // build dummy beam spot from primary vertex
-                    reco::BeamSpot dummyBeamSpot = vertexBeamSpot;  
-
-                    // set primary vertex reference point pvXYZ
-                    math::XYZPoint pvXYZ(iteForD0->position());
-
-                    // get beam spot covariance matrix (to define variable)
-		    reco::BeamSpot::CovarianceMatrix CovMatBeam = vertexBeamSpot.covariance(); 
-                    // supersede 3x3 part of 7x7 covariance matrix by vertex info
-                    // and set the remainder to 0 (should some info be kept?)
-                    for (int icov = 0; icov < 7; ++icov) {
-                      for (int jcov = 0; jcov < 7; ++jcov) {
-                        if (icov < 3 && jcov < 3) CovMatBeam[icov][jcov] = iteForD0->covariance(icov,jcov);
-                        else CovMatBeam[icov][jcov]=0;
-                      }
-                    }
-                
-                      // refill dummybeamspot with vertex info
-                      dummyBeamSpot = BeamSpot(pvXYZ, sqrt(iteForD0->covariance(2,2)), vertexBeamSpot.dxdz(), vertexBeamSpot.dydz(), sqrt(iteForD0->covariance(0,0)), CovMatBeam, reco::BeamSpot::Unknown);
-
-		      // do the revertexing of the slow pion 
-		      KalmanVertexFitter theFitter3(true);
-                      myPisVertex = theFitter3.vertex(mytracksforpislow,dummyBeamSpot);
-		    // proceed only if fit was successful
-		    if (myPisVertex.isValid()) {
-
-		    // and if confidence level is reasonable
-                  // vertex parameters
-		  float ndofPis = myPisVertex.degreesOfFreedom();
-                  // for Adaptive Vertex Fitter this sum of weights*2-3
-                  // for Kalman Vertex Fitter this is 1 for two tracks?
-                  chi2Pis = myVertex.totalChiSquared();
-                  // confidence level
-                  float CLPis=999.;
-                  if (ndofPis >= 1) {
-                    CLPis = TMath::Prob(chi2Pis,(int)ndofPis); 
-                  }
-                  // cut on chisquared (Adaptive) or CL (Kalman) here?
-                  if (CLPis>0.01) {
-
-                      // *** should cut on the chi2 here, or at least store it ... ***
-                
-                      // get updated track parameters
-                      vector<TransientTrack> trackspis = myPisVertex.refittedTracks();
-                      vector<TransientTrack>::const_iterator trackpsIt = trackspis.begin();
-                      const Track & trackpis = trackpsIt->track();
-                      t3ptr = trackpis.pt();
-                      t3etar = trackpis.eta();
-                      t3phir = trackpis.phi();
-
-		      //cout << "pislow after: " << t3ptr << " " << t3etar << " " << t3phir << endl; 
-
-		      // Calculate 4 momentum for slow pion using TLorentzVector
-		      p4pisr.SetPtEtaPhiM(t3ptr, t3etar, t3phir, pimass);
-
-                      // Calculate D* four-momentum 
-		      p4Dstarr = p4DstarD0 + p4pisr;
-                      // the 2nd just in case;	  
-                      if (Kis==12) p4Dstarr2 = p4D021 + p4pisr;
-
-		      // calculate D*-D0 mass difference;
-		      deltamr = (p4Dstarr.M()) - p4DstarD0.M();
-                      deltamr2 = 9999.;
-                      // the 2nd just in case;	  
-		      if (Kis==12) deltamr2 = (p4Dstarr2.M()) - p4D021.M();
-		     } // CLPis
-		    } // myPisVertex valid  
-#ifdef miniAOD
-		  } // hasTrackDetails
-#endif
-
-		      // cout << "ATAU CRASH SINI 4?" << endl;
-
-  
-//      ********  fill Dstar histograms *****************
-
-		      // if ( (p4Dstar.Pt()) > 3.5 && itK1->pt() > 1 && itP2->pt() > 1 && itPS3->pt() > 0.25 && abs(deltam - 0.1454) < 0.001 && itP2->charge() != itK1->charge()) {h_Ncand_D0mass_alSpectrum->Fill(1);}
-		      
-		      // ATLAS cuts
-		      // if (DmesonsDL && (p4Dstar.Pt()) > 3.5 && itK1->pt() > 1 && itP2->pt() > 1 && itPS3->pt() > 0.25 && abs(deltam - 0.1454) < 0.001) {
-		      // if ((p4Dstar.Pt()) > 3.5 && itK1->pt() > 1 && itP2->pt() > 1 && itPS3->pt() > 0.25 && myVertex.isValid() && VtxFound2) { // cutmacro
-
-                      // this is a dummy if to keep the structure ...
-		      if (myVertex.isValid() && VtxFound2) {
-
-        	        // Fill histograms for right sign only 
-                        // (don't need to deal with wrong sign ambiguity)
-			if (it1->charge() != it2->charge()) { // cutmacro
-                          // fill data for all vertices, 
-                          // fill MC only for main simulated vertex
-		          if (run!=1 || (vtxidD0>-1 && PVtx_isMainSim[vtxidD0])) {
-		            h_d0pt->Fill(p4DstarD0.Pt());
-		            h_dstarpt->Fill(p4Dstar.Pt());
-		            h_PS3pt->Fill(t3pt);
-                            if (Kis == 1) {
-                            // first track is Kaon candidate (K-pi+pi+ or K+pi-pi-) 
-           		    h_K1pt->Fill(it1->pt());
-		            h_P2pt->Fill(it2->pt());
-		            h_K1eta->Fill(it1->eta());
-		            h_P2eta->Fill(it2->eta());
-                            }
-                            else if (Kis ==2) {                
-                              // second track is Kaon candidate 
-                              h_K1pt->Fill(it2->pt());
-		              h_P2pt->Fill(it1->pt());
-		              h_K1eta->Fill(it2->eta());
-		              h_P2eta->Fill(it1->eta());              
-                            }
-                            else {
-                              cout << "*** ALARM !!! Kaon not assigned ***" << endl;
-                            }
-		            h_PS3eta->Fill(t3eta);
-			  
-         	            // h_Vertex_Multiplicity_D0mass_allSpectrum->Fill(1);
-			    if ((p4Dstar.Pt()) > 3.5 && it1->pt() > 1 && it2->pt() > 1 && t3pt > 0.25) {
-
-			      if (abs(deltam - dmDstarActual) < 0.001) {
-			        h_D0masscut->Fill(p4DstarD0.M());
-
-			        // right side decay length D0 from Dstar
-			        if (dlxyD0 > 0.02) {
-				  h_D0masscut_rightDLcut->Fill(p4DstarD0.M());
-			        } // this cut need to put in macro
-			      } // this cut need to put in macro
-
-			      if (abs(p4DstarD0.M() - mD0Actual) < 0.025) {
-			        h_deltaMassD0Dstar->Fill(deltam);
-			    
-			        if (dlxyD0 > 0.02) {
-				  h_deltaMassD0Dstar_rightDLcut->Fill(deltam);
-			        } // this cut need to put in macro
-			      } // this cut need to put in macro (the mD0 must be mD0 from Dstar)
-                            } // end of tight cuts
-			  } // end of cut for histo
-			  // cout << "ATAU CRASH SINI 6?" << endl;
-
-			  // print out interesting candidates
-                          if (Bingo == 1 && deltam > dmDstartmin && deltam < dmDstartmax) {
-                            cout << "event " << event << " DstarD0 " << " pt " << p4DstarD0.Pt() << " eta " << p4DstarD0.Eta() << " phi " << p4DstarD0.Phi() <<  " z " << zD0 << " dl " << dlxyD0 << endl;
-		          } // Bingo
-		        } // end of unlike sign cut 
-
-//  *** more selections/corrections *** 
-
-                        // check for associated simulated Dstar from prestored list
-                        simidDstar = -1;
-                        if (Bingo) {
-                          cout << "nDstarsim " << nD0sim << endl;
-                          if (nDstarsim>0) {
-                            cout << "pts " << ptDstarsim[0] << " eta " << etaDstarsim[0] << " phi " << phiDstarsim[0] << endl;
-                            cout << "pt " << p4Dstar.Pt() << " eta " << p4Dstar.Eta() << " phi " << p4Dstar.Phi() << endl;
-                          } //Dstarsim
-                        } // Bingo
-                        for (int iDstar=0; iDstar<nDstarsim; ++iDstar) {
-                          if (abs(p4Dstar.Pt()-ptDstarsim[iDstar])/ptDstarsim[iDstar] < 0.2 && abs(p4Dstar.Eta()-etaDstarsim[iDstar])<0.3 && fmod(abs(p4Dstar.Phi()-phiDstarsim[iDstar]),2.*pi)<0.3) {
-                            simidDstar = idDstarsim[iDstar];
-#ifdef Bingo
-                            cout << "Dstar identified " << p4Dstar.M() << endl;
-#endif
-                            break;
-                          } // if
-                        }  // for
-
-                        // find out whether pis is from D0 primary 
-                        // CPU-expensive! do only after all cuts
-                        // loop over all tracks from D0 primary vertex 
-                        // (does not work for miniAOD: empty loop)
-			// *** should use primary track instead of general track? ***
-                        for (reco::Vertex::trackRef_iterator iTrack = iteForD0->tracks_begin(); iTrack != iteForD0->tracks_end(); ++iTrack) {
-                          // get track reference	    
-		          const reco::TrackRef trackRef = iTrack->castTo<reco::TrackRef>();
-                          if (trackRef.get() == &*itPS3) {
-                            t3vtxid = ivtx;
-
-			    //  cout << "pislow vertex: " << trackRef->pt() << " " << trackRef->eta() << " " << trackRef->phi() << endl;
-                            // effective the same as the generaltrack
- 
-                          } // trackref
-                        } // itrack
-
-                        // check whether Dstar candidate uses muons
-                        bool hasmuDstar = hasmuD0;
-                        for (uint mm = 0; mm<nMuon; ++mm) {
-                          if (it3count == Muon_trkIdx[mm]) hasmuDstar = true; 
-                        }
-
-
-//   ******************** fill Dstar ntuple info *******************
- 
-                        if (Dstar_pt.size() < nReserve_Dstar) {
-				      
-                          // Save the D0 from Dstar, kaon and pion after revertexing
-                          if (deltam < dmDstarmax && 
-                           ( (p4DstarD0.M() > mD0tmin && p4DstarD0.M() < mD0tmax) || 
-                             (deltam > dmDstartmin && deltam < dmDstartmax) ) ) {
-#ifdef miniAOD
-			// some check for slow pion
-                        //if (icPS3->pt()<0.25 && vtxidD0==0) {
-                        //  cout << "pis pt " << icPS3->pt() << " dz " << icPS3->dz() << " vtx " << vtxidD0 << endl;
-                        //}
-#endif 
-                            // D0 parameters 
-                            DstarD0_pt.push_back(p4DstarD0.Pt());
-                            DstarD0_eta.push_back(p4DstarD0.Eta());
-                            DstarD0_phi.push_back(p4DstarD0.Phi());
-                            DstarD0_mass.push_back(p4DstarD0.M());
-                            DstarD0_chi2.push_back(chi2D0);
-                            DstarD0_dlxy.push_back(dlxyD0);
-                            DstarD0_dlxyErr.push_back(dlxyerrD0);
-                            DstarD0_dlxySig.push_back(dlxysigD0);
-                            DstarD0_cosphixy.push_back(cosphixyD0);
-                            DstarD0_dl.push_back(dlD0);
-                            DstarD0_dlErr.push_back(dlerrD0);
-                            DstarD0_dlSig.push_back(dlsigD0);
-                            DstarD0_cosphi.push_back(cosphiD0);
-                            DstarD0_ptfrac.push_back(zD0);
-                            DstarD0_ptfrac15.push_back(zD015);
-                            DstarD0_ptfrac10.push_back(zD010);
-                            DstarD0_ptfrac07.push_back(zD007);
-                            DstarD0_ptfrac04.push_back(zD004);
-                            DstarD0_x.push_back(D0x);
-                            DstarD0_y.push_back(D0y);
-                            DstarD0_z.push_back(D0z);
-                            DstarD0_simIdx.push_back(simidD0);
-                            if (storeD0) {
-                              DstarD0_recIdx.push_back(nD0-1);
-                              D0_DstarIdx[nD0-1]=Dstar_pt.size(); // not yet incremented
-                            }
-			    else {
-                              DstarD0_recIdx.push_back(-1);
-                            }
-                            DstarD0_ambiPrim.push_back(ambiprimary);
-
-                            // K and pi parameters
-                            if (Kis == 1 || Kis == 12) {
-                              // first track is Kaon candidate
-                              DstarK_pt.push_back(it1->pt());
-                              DstarK_eta.push_back(it1->eta());
-                              DstarK_phi.push_back(it1->phi());
-                              DstarK_chg.push_back(it1->charge());
-                              DstarK_tkIdx.push_back(it1count);
-                              DstarK_Kprob.push_back(t1Kprob);
-                              DstarK_piprob.push_back(t1piprob);
-                              DstarK_dEdxnmeas.push_back(dedxtrknmeas);
-                              DstarK_dEdxnsat.push_back(dedxtrknsat);
-                              DstarK_vtxIdx.push_back(t1vtxid);
-                              DstarK_chindof.push_back(t1chindof); 
-                              DstarK_nValid.push_back(t1nvalid);
-                              DstarK_nPix.push_back(t1npix);
-		              DstarK_isHighPurity.push_back(t1highp);
-                              DstarK_dxy.push_back(t1dxy);
-                              DstarK_dz.push_back(t1dz);
-
-                              Dstarpi_pt.push_back(it2->pt());
-                              Dstarpi_eta.push_back(it2->eta());
-                              Dstarpi_phi.push_back(it2->phi());
-                              Dstarpi_chg.push_back(it2->charge());
-                              Dstarpi_tkIdx.push_back(it2count);
-                              Dstarpi_Kprob.push_back(t2Kprob);
-                              Dstarpi_piprob.push_back(t2piprob);
-                              Dstarpi_dEdxnmeas.push_back(dedxtrk2nmeas);
-                              Dstarpi_dEdxnsat.push_back(dedxtrk2nsat);
-                              Dstarpi_vtxIdx.push_back(t2vtxid);
-                              Dstarpi_chindof.push_back(t2chindof);
-                              Dstarpi_nValid.push_back(t2nvalid);
-                              Dstarpi_nPix.push_back(t2npix);
-		              Dstarpi_isHighPurity.push_back(t2highp);
-                              Dstarpi_dxy.push_back(t2dxy);
-                              Dstarpi_dz.push_back(t2dz);
-                            } // Kis
-                            else if (Kis == 2) {
-                              // second track is Kaon candidate
-                              DstarK_pt.push_back(it2->pt());
-                              DstarK_eta.push_back(it2->eta());
-                              DstarK_phi.push_back(it2->phi());
-                              DstarK_chg.push_back(it2->charge());
-                              DstarK_tkIdx.push_back(it2count);
-                              DstarK_Kprob.push_back(t2Kprob);
-                              DstarK_piprob.push_back(t2piprob);
-                              DstarK_dEdxnmeas.push_back(dedxtrk2nmeas);
-                              DstarK_dEdxnsat.push_back(dedxtrk2nsat);
-                              DstarK_vtxIdx.push_back(t2vtxid);
-                              DstarK_chindof.push_back(t2chindof);
-                              DstarK_nValid.push_back(t2nvalid);
-                              DstarK_nPix.push_back(t2npix);
-		              DstarK_isHighPurity.push_back(t2highp);
-                              DstarK_dxy.push_back(t2dxy);
-                              DstarK_dz.push_back(t2dz);
-
-                              Dstarpi_pt.push_back(it1->pt());
-                              Dstarpi_eta.push_back(it1->eta());
-                              Dstarpi_phi.push_back(it1->phi());
-                              Dstarpi_chg.push_back(it1->charge());
-                              Dstarpi_tkIdx.push_back(it1count);
-                              Dstarpi_Kprob.push_back(t1Kprob);
-                              Dstarpi_piprob.push_back(t1piprob);
-                              Dstarpi_dEdxnmeas.push_back(dedxtrknmeas);
-                              Dstarpi_dEdxnsat.push_back(dedxtrknsat);
-                              Dstarpi_vtxIdx.push_back(t1vtxid);
-                              Dstarpi_chindof.push_back(t1chindof);
-                              Dstarpi_nValid.push_back(t1nvalid);
-                              Dstarpi_nPix.push_back(t1npix);
-		              Dstarpi_isHighPurity.push_back(t1highp);
-                              Dstarpi_dxy.push_back(t1dxy);
-                              Dstarpi_dz.push_back(t1dz);
-	                    } // Kis
-                            else {
-                              cout << "*** ALARM 2 !!! Kaon not assigned ***" << endl;
-                            } // else Kis
-
-                            // slow pion parameters
-                            Dstarpis_pt.push_back(t3pt);
-                            Dstarpis_eta.push_back(t3eta);
-                            Dstarpis_phi.push_back(t3phi);
-                            Dstarpis_ptr.push_back(t3ptr);
-                            Dstarpis_etar.push_back(t3etar);
-                            Dstarpis_phir.push_back(t3phir);
-                            Dstarpis_chg.push_back(t3charge);
-                            Dstarpis_tkIdx.push_back(it3count);
-                            Dstarpis_Kprob.push_back(t3Kprob);
-                            Dstarpis_piprob.push_back(t3piprob);
-                            Dstarpis_dEdxnmeas.push_back(dedxtrk3nmeas);
-                            Dstarpis_dEdxnsat.push_back(dedxtrk3nsat);
-                            Dstarpis_vtxIdx.push_back(t3vtxid);
-                            Dstarpis_chindof.push_back(t3chindof);
-                            Dstarpis_chir.push_back(chi2Pis);
-                            Dstarpis_nValid.push_back(t3nvalid);
-                            Dstarpis_nPix.push_back(t3npix);
-                            Dstarpis_dxy.push_back(t3dxy);
-                            Dstarpis_dz.push_back(t3dz);
-	
-                            // Dstar parameters
-                            Dstar_pt.push_back(p4Dstar.Pt());
-                            Dstar_eta.push_back(p4Dstar.Eta());
-                            Dstar_phi.push_back(p4Dstar.Phi());
-                            Dstar_rap.push_back(rapDstar);
-                            Dstar_deltam.push_back(deltam);
-                            Dstar_deltamr.push_back(deltamr);
-                            Dstar_simIdx.push_back(simidDstar);
-                            Dstar_vtxIdx.push_back(vtxidD0);
-                            Dstar_hasMuon.push_back(hasmuDstar);
-                            Dstar_ptfrac.push_back(zDstar);
-                          } //end of mass and deltam cut
-                        } // end of reserve Dstar 
-	                else {
-                          cout << "WARNING!!!!! NO. OF D* IS MORE THAN YOUR RESERVED NO.!!!!!!" << endl;
-                        } // else reserve Dstar
-	                if (Kis==12) { 
-                          // Save other candidate for wrong sign combinations
-                          if (Dstar_pt.size() < nReserve_Dstar) {
-                            p4DstarD0 = p4D021; 
-
-                            // Save the D0 from Dstar, kaon and pion after revertexing
-                            if (deltam2 < dmDstarmax &&
-                               ( (p4DstarD0.M() > mD0tmin && p4DstarD0.M() < mD0tmax) || 
-                               ( deltam2 > dmDstartmin && deltam2 < dmDstartmax) ) ) {
-
-                              // D0 parameters 
-                              DstarD0_pt.push_back(p4DstarD0.Pt());
-                              DstarD0_eta.push_back(p4DstarD0.Eta());
-                              DstarD0_phi.push_back(p4DstarD0.Phi());
-                              DstarD0_mass.push_back(p4DstarD0.M());
-                              DstarD0_chi2.push_back(chi2D0);
-                              DstarD0_dlxy.push_back(dlxyD0);
-                              DstarD0_dlxyErr.push_back(dlxyerrD0);
-                              DstarD0_dlxySig.push_back(dlxysigD0);
-                              DstarD0_cosphixy.push_back(cosphixyD0);
-                              DstarD0_dl.push_back(dlD0);
-                              DstarD0_dlErr.push_back(dlerrD0);
-                              DstarD0_dlSig.push_back(dlsigD0);
-                              DstarD0_cosphi.push_back(cosphiD0);
-                              DstarD0_ptfrac.push_back(zD0);
-                              DstarD0_ptfrac15.push_back(zD015);
-                              DstarD0_ptfrac10.push_back(zD010);
-                              DstarD0_ptfrac07.push_back(zD007);
-                              DstarD0_ptfrac04.push_back(zD004);
-                              DstarD0_x.push_back(D0x);
-                              DstarD0_y.push_back(D0y);
-                              DstarD0_z.push_back(D0z);
-                              DstarD0_simIdx.push_back(simidD0);
-                              if (storeD0) {
-                                // this should actually never happen?
-                                DstarD0_recIdx.push_back(nD0-1);
-                                D0_DstarIdx[nD0-1]=Dstar_pt.size(); // not yet incremented 
-                              }
-	              	      else {
-                                DstarD0_recIdx.push_back(-1);
-                              }
-                              DstarD0_ambiPrim.push_back(ambiprimary);
-
-                              // second track is Kaon candidate
-                              DstarK_pt.push_back(it2->pt());
-                              DstarK_eta.push_back(it2->eta());
-                              DstarK_phi.push_back(it2->phi());
-                              DstarK_chg.push_back(it2->charge());
-                              DstarK_tkIdx.push_back(it2count);
-                              DstarK_Kprob.push_back(t2Kprob);
-                              DstarK_piprob.push_back(t2piprob);
-                              DstarK_dEdxnmeas.push_back(dedxtrk2nmeas);
-                              DstarK_dEdxnsat.push_back(dedxtrk2nsat);
-                              DstarK_vtxIdx.push_back(t2vtxid);
-                              DstarK_chindof.push_back(t2chindof);
-                              DstarK_nValid.push_back(t2nvalid);
-                              DstarK_nPix.push_back(t2npix);
-		              DstarK_isHighPurity.push_back(t2highp);
-                              DstarK_dxy.push_back(t2dxy);
-                              DstarK_dz.push_back(t2dz);
-
-                              Dstarpi_pt.push_back(it1->pt());
-                              Dstarpi_eta.push_back(it1->eta());
-                              Dstarpi_phi.push_back(it1->phi());
-                              Dstarpi_chg.push_back(it1->charge());
-                              Dstarpi_tkIdx.push_back(it1count);
-                              Dstarpi_Kprob.push_back(t1Kprob);
-                              Dstarpi_piprob.push_back(t1piprob);
-                              Dstarpi_dEdxnmeas.push_back(dedxtrknmeas);
-                              Dstarpi_dEdxnsat.push_back(dedxtrknsat);
-                              Dstarpi_vtxIdx.push_back(t1vtxid);
-                              Dstarpi_chindof.push_back(t1chindof);
-                              Dstarpi_nValid.push_back(t1nvalid);
-                              Dstarpi_nPix.push_back(t1npix);
-		              Dstarpi_isHighPurity.push_back(t1highp);
-                              Dstarpi_dxy.push_back(t1dxy);
-                              Dstarpi_dz.push_back(t1dz);
-
-                              // slow pion parameters
-                              Dstarpis_pt.push_back(t3pt);
-                              Dstarpis_eta.push_back(t3eta);
-                              Dstarpis_phi.push_back(t3phi);
-                              Dstarpis_ptr.push_back(t3ptr);
-                              Dstarpis_etar.push_back(t3etar);
-                              Dstarpis_phir.push_back(t3phir);
-                              Dstarpis_chg.push_back(t3charge);
-                              Dstarpis_tkIdx.push_back(it3count);
-                              Dstarpis_Kprob.push_back(t3Kprob);
-                              Dstarpis_piprob.push_back(t3piprob);	
-                              Dstarpis_dEdxnmeas.push_back(dedxtrk3nmeas);
-                              Dstarpis_dEdxnsat.push_back(dedxtrk3nsat);
-                              Dstarpis_vtxIdx.push_back(t3vtxid);
-                              Dstarpis_chindof.push_back(t3chindof);  
-                              Dstarpis_chir.push_back(chi2Pis);  
-                              Dstarpis_nValid.push_back(t3nvalid);
-                              Dstarpis_nPix.push_back(t3npix);
-                              Dstarpis_dxy.push_back(t3dxy);
-                              Dstarpis_dz.push_back(t3dz);
-
-                              // Dstar parameters (2nd candidate)
-                              Dstar_pt.push_back(p4Dstar2.Pt());
-                              Dstar_eta.push_back(p4Dstar2.Eta());
-                              Dstar_phi.push_back(p4Dstar2.Phi());
-                              Dstar_rap.push_back(rapDstar);
-                              Dstar_deltam.push_back(deltam2);
-                              Dstar_deltamr.push_back(deltamr2);
-                              Dstar_simIdx.push_back(simidDstar);
-                              Dstar_vtxIdx.push_back(vtxidD0);
-                              Dstar_hasMuon.push_back(hasmuDstar);
-                              Dstar_ptfrac.push_back(zDstar);
-                            } //end of mass and deltam cut
-                          } // end of reserve Dstar 
-                          else {
-                            cout << "WARNING 2!!!!! NO. OF D* IS MORE THAN YOUR RESERVED NO.!!!!!!" << endl;
-                          } // else reserve Dstar
-			} // end of Kis == 12
-		      } // end of dummy/ATLAS cuts check
-		    } // if (sqrt(vc2[0]*vc2[0] +......
-    //		  } // end of not t1 or t2 check
-#ifdef miniAOD
-         	 } // end of ialt 
-#endif
-		} // end of PS3 loop
-	      } // end of track size >=3
-	    } // if ( sqrt (vc[0]*vc[0] + vc[1]*vc[1])<0.1 && vc[2] < 0.1)
-	  } // if ( itP2 !=itK1 && itP2->pt() > 0.5 )
-	} // end of t2 loop			    
-      } //end of t1 Pt cut
-    } // end of track collection
-  } // end of track size >=2
-  nDstar = Dstar_pt.size();
-
-  // cout << "IS DMESON LOOP OK?" << endl;
-  
-//////////////////////////////////////////////////////////////////////////////
-//////////////////////////// D* Meson Analysis End ///////////////////////////
-//////////////////////////////////////////////////////////////////////////////
-	} // nanoext
-
-  //cout << "fill tree" << endl;
+  // cout << "fill tree" << endl;
 
   // Fill the tree for muon and dmeson
   t_event->Fill();
 
-  //cout << "hello analysis end" << endl;
+  // cout << "hello analysis end" << endl;
 
 }//NanoAnalyzer::analyze ends
 
@@ -7323,7 +4869,7 @@ void NanoAnalyzer::analyzeTrigger(const edm::Event& iEvent, const edm::EventSetu
   using namespace reco;
   using namespace trigger;
 
-  cout<<"Currently analyzing trigger "<<triggerName<<endl;
+  std::cout<<"Currently analyzing trigger "<<triggerName<<std::endl;
   //Check the current configuration to see how many total triggers there are
   const unsigned int n(hltConfig_.size());
   //Get the trigger index for the current trigger
@@ -7332,8 +4878,8 @@ void NanoAnalyzer::analyzeTrigger(const edm::Event& iEvent, const edm::EventSetu
   assert(triggerIndex==iEvent.triggerNames(*triggerResultsHandle_).triggerIndex(triggerName));
   // abort on invalid trigger name
   if (triggerIndex>=n) {
-    cout << "HLTEventAnalyzerAOD::analyzeTrigger: path "
-         << triggerName << " - not found!" << endl;
+    std::cout << "HLTEventAnalyzerAOD::analyzeTrigger: path "
+	      << triggerName << " - not found!" << std::endl;
     return;
   }
   //else {cout << "HLTEventAnalyzerAOD inside loop QQQQQ " << triggerName_ << endl;}
@@ -7368,17 +4914,17 @@ void NanoAnalyzer::analyzeTrigger(const edm::Event& iEvent, const edm::EventSetu
       const Keys& KEYS(triggerEventHandle_->filterKeys(filterIndex));
       const size_type nI(VIDS.size());
       const size_type nK(KEYS.size());
-      cout << "QQQ before  " << " accepted 'L3' objects found: " << " nI " << nI << " nK " << nK << endl;
+      std::cout << "QQQ before  " << " accepted 'L3' objects found: " << " nI " << nI << " nK " << nK << std::endl;
       assert(nI==nK);
       const size_type n(max(nI,nK));
-      cout << "QQQ   " << n  << " accepted 'L3' objects found: " << " nI " << nI << " nK " << nK << endl;
+      std::cout << "QQQ   " << n  << " accepted 'L3' objects found: " << " nI " << nI << " nK " << nK << std::endl;
       const TriggerObjectCollection& TOC(triggerEventHandle_->getObjects());
       for (size_type i=0; i!=n; ++i) {
         const TriggerObject& TO(TOC[KEYS[i]]);
-        cout << "QQQ Obj   " << i << " " << VIDS[i] << "/" << KEYS[i] << ": id, pt, eta, phi, mass"
+	std::cout << "QQQ Obj   " << i << " " << VIDS[i] << "/" << KEYS[i] << ": id, pt, eta, phi, mass"
              << TO.id() << " " << TO.pt() << " " << TO.eta() << " "
              << TO.phi() << " " << TO.mass()
-             << endl;
+		  << std::endl;
       }
 
 
@@ -7398,49 +4944,23 @@ void
 //NanoAnalyzer::beginJob(const edm::Event& iEvent)
 NanoAnalyzer::beginJob()
 {
-  // use this if your c++ < 14 (depend on your CMSSW)
-  // file = unique_ptr<TFile>(new TFile("nAODish.root", "recreate")); // check
-  
-  // CHANGE
-  /* 
-  
-  file = unique_ptr<TFile>(new TFile(outFile.c_str(), "recreate")); // check
-  
-  // use this if your c++ => 14
-  // make_unique<TFile>("nAODish.root", "recreate");
-  // use this if you didn't use unique pointer
-  // file = new TFile("nAODish.root", "recreate");
-  
-  t_event = unique_ptr<TTree>(new TTree("Events", "Events"));
-  
-  // h_ = uniques_ptr<TH1D>(new TH1D("h_D0masscut", "", 60, 1.6, 2.2));
-  h_d0pt = unique_ptr<TH1D>(new TH1D("h_d0pt","",100, 0 ,15));
-  h_dstarpt = unique_ptr<TH1D>(new TH1D("h_dstarpt","",100, 0 ,15));
-  h_PS3pt = unique_ptr<TH1D>(new TH1D("h_PS3pt","",100, 0 ,2));
-  h_K1pt = unique_ptr<TH1D>(new TH1D("h_K1pt","",100, 0 ,10));
-  h_P2pt = unique_ptr<TH1D>(new TH1D("h_P2pt","",100, 0 ,10));
-  h_PS3eta = unique_ptr<TH1D>(new TH1D("h_PS3eta","",50, -3 ,3));
-  h_P2eta = unique_ptr<TH1D>(new TH1D("h_P2eta","",50, -3 ,3));
-  h_K1eta = unique_ptr<TH1D>(new TH1D("h_K1eta","",50, -3 ,3));
-  h_D0masscut = unique_ptr<TH1D>(new TH1D("h_D0masscut", "", 60, 1.6, 2.2));
-  h_deltaMassD0Dstar = unique_ptr<TH1D>(new TH1D("h_deltaMassD0Dstar", "", 64, 0.138, 0.17));
-  h_D0masscut_rightDLcut = unique_ptr<TH1D>(new TH1D("h_D0masscut_rightDLcut", "", 60, 1.6, 2.2));
-  h_deltaMassD0Dstar_rightDLcut = unique_ptr<TH1D>(new TH1D("h_deltaMassD0Dstar_rightDLcut", "", 64, 0.138, 0.17));
-
-  */
-  
   file = new TFile(outFile.c_str(), "recreate"); // check
   t_event = new TTree("Events", "Events");
   //t_event->SetAutoSave(-500000000);
   t_event->SetAutoSave(0);
 
 #if ROOT_VERSION_CODE > ROOT_VERSION(6, 6, 0)
+  // mutiple threads caused trouble with trigger bit treatment
   t_event->SetImplicitMT(false);
 #endif
 
-  h_trackpt = new TH1D("h_trackpt","",500, 0.,50.);
+#ifdef charm
+  // histograms 
+  /* h_trackpt = new TH1D("h_trackpt","",500, 0.,50.);
   h_trackptlow = new TH1D("h_trackptlow","",100, 0.,1.);
+  h_trackptlowfine = new TH1D("h_trackptlowfine","",600, 0.,1.5);
   h_tracketa = new TH1D("h_tracketa","",160, -4.,4.);
+  h_trackcov00 = new TH1D("h_trackcov00","",1000, 0.,0.001);
 
   h_d0pt = new TH1D("h_d0pt","",100, 0. ,15.);
   h_dstarpt = new TH1D("h_dstarpt","",100, 0. ,15.);
@@ -7453,27 +4973,8 @@ NanoAnalyzer::beginJob()
   h_D0masscut = new TH1D("h_D0masscut", "", 60, 1.6, 2.2);
   h_deltaMassD0Dstar = new TH1D("h_deltaMassD0Dstar", "", 64, 0.138, 0.17);
   h_D0masscut_rightDLcut = new TH1D("h_D0masscut_rightDLcut", "", 60, 1.6, 2.2);
-  h_deltaMassD0Dstar_rightDLcut = new TH1D("h_deltaMassD0Dstar_rightDLcut", "", 64, 0.138, 0.17);
-
-  // H4lepton
-  h_p_e = new TH1D("e_momentum", "Electron momentum", 200, 0., 200.);
-  h_et_e = new TH1D("e_eT", "Electron eT", 200, 0., 200.);
-  h_pt_e_b4 = new TH1D("b4_e_pT", "Electron pT", 200, 0, 200.);
-  h_eta_e_b4 = new TH1D("b4_e_eta", "Electron eta", 140, -3.5, 3.5);
-  h_phi_e = new TH1D("e_phi", "Electron phi", 314, -3.17, 3.17);
-  h_sc_eta = new TH1D("e_SC_eta", "Electron SC eta", 140, -3.5, 3.5);
-  h_sc_rawE = new TH1D("e_SC_rawE", "Electron SC rawE", 200, 0., 200.);
-  h_relPFIso_e = new TH1D("e_RelPFIso", "R.PFIso", 100, 0., 5.);
-  double Iso[12] = {0., 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.5, 10.};
-  h_relPFIso_pt_e = new TH2D("e_RelPFIso_pT","R.PFIso 2D",11,Iso,100,0., 50.);
-  h_dxy_e = new TH1D("e_dxy", "Electron dxy", 100, 0., 1.);
-  h_SIP3d_e_b4 = new TH1D("SIP3d_e", "SIP_3D for Electron", 100, 0., 10.);
-  h_misshite = new TH1D("e_misshit", "e track missing hits", 5, 0., 5.);
-  
-  // h_Vertex_Multiplicity_D0mass_allSpectrum = unique_ptr<TH1D>(new TH1D("h_Vertex_Multiplicity_D0mass_allSpectrum","", 10, 0, 10));
-  // h_Ncand_D0mass_allSpectrum = unique_ptr<TH1D>(new TH1D("h_Ncand_D0mass_allSpectrum","", 10, 0, 10));  
-  // t_Mu = new TTree("Events", "Events"); // same conversion as official nAOD  
-  // t_Dmeson = new TTree("Dmeson", "Dmeson");
+  h_deltaMassD0Dstar_rightDLcut = new TH1D("h_deltaMassD0Dstar_rightDLcut", "", 64, 0.138, 0.17); */
+#endif
 
   //---------------------------- Gen Particle reserve --------------------------//
   
@@ -7481,6 +4982,7 @@ NanoAnalyzer::beginJob()
   GenPart_eta.reserve(nReserve_GenPart);
   GenPart_phi.reserve(nReserve_GenPart);
   GenPart_mass.reserve(nReserve_GenPart);
+  GenPart_charge.reserve(nReserve_GenPart);
   GenPart_pdgId.reserve(nReserve_GenPart);
   GenPart_status.reserve(nReserve_GenPart);
   GenPart_statusFlags.reserve(nReserve_GenPart);
@@ -7492,6 +4994,8 @@ NanoAnalyzer::beginJob()
   GenPart_sparpdgId.reserve(nReserve_GenPart);
   GenPart_numberOfDaughters.reserve(nReserve_GenPart);
   GenPart_nstchgdaug.reserve(nReserve_GenPart);
+  // Josry2 prompt/nonprompt extension
+  GenPart_promptFlag.reserve(nReserve_GenPart);
   GenPart_vx.reserve(nReserve_GenPart);
   GenPart_vy.reserve(nReserve_GenPart);
   GenPart_vz.reserve(nReserve_GenPart);
@@ -7568,6 +5072,7 @@ NanoAnalyzer::beginJob()
   Muon_pfRelIso03_all.reserve(nReserve_Muon);
   Muon_pfRelIso03_chg.reserve(nReserve_Muon);
   Muon_pfRelIso04_all.reserve(nReserve_Muon);
+  Muon_pfIsoId.reserve(nReserve_Muon);
   Muon_miniPFRelIso_all.reserve(nReserve_Muon); 
   Muon_miniPFRelIso_chg.reserve(nReserve_Muon); 
   Muon_jetIdx.reserve(nReserve_Muon); 
@@ -7619,12 +5124,12 @@ NanoAnalyzer::beginJob()
 
   //------------------------------- Dimuon reserve --------------------------//
 
-  Dimut1_muIdx.reserve(nReserve_Dimu);
-  Dimut1_dxy.reserve(nReserve_Dimu);
-  Dimut1_dz.reserve(nReserve_Dimu);
-  Dimut2_muIdx.reserve(nReserve_Dimu);
-  Dimut2_dxy.reserve(nReserve_Dimu);
-  Dimut2_dz.reserve(nReserve_Dimu);
+  Dimu_t1muIdx.reserve(nReserve_Dimu);
+  Dimu_t1dxy.reserve(nReserve_Dimu);
+  Dimu_t1dz.reserve(nReserve_Dimu);
+  Dimu_t2muIdx.reserve(nReserve_Dimu);
+  Dimu_t2dxy.reserve(nReserve_Dimu);
+  Dimu_t2dz.reserve(nReserve_Dimu);
   Dimu_pt.reserve(nReserve_Dimu);
   Dimu_eta.reserve(nReserve_Dimu);
   Dimu_phi.reserve(nReserve_Dimu);
@@ -7653,169 +5158,7 @@ NanoAnalyzer::beginJob()
   Dimu_Covzy.reserve(nReserve_Dimu);
   Dimu_Covzz.reserve(nReserve_Dimu);
 
-
-  //------------------------------- Dmeson reserve --------------------------//
-  
-  D0t1_pt.reserve(nReserve_D0);
-  D0t1_eta.reserve(nReserve_D0);
-  D0t1_phi.reserve(nReserve_D0);
-  D0t1_chg.reserve(nReserve_D0);
-  D0t1_tkIdx.reserve(nReserve_D0);
-  D0t1_Kprob.reserve(nReserve_D0);
-  D0t1_piprob.reserve(nReserve_D0);
-  D0t1_dEdxnmeas.reserve(nReserve_D0);
-  D0t1_dEdxnsat.reserve(nReserve_D0);
-  D0t1_vtxIdx.reserve(nReserve_D0);
-  D0t1_chindof.reserve(nReserve_D0);
-  D0t1_nValid.reserve(nReserve_D0);
-  D0t1_nPix.reserve(nReserve_D0);
-  D0t1_isHighPurity.reserve(nReserve_D0);
-  D0t1_pdgId.reserve(nReserve_D0);
-  D0t1_dxy.reserve(nReserve_D0);
-  D0t1_dz.reserve(nReserve_D0);
-  D0t2_pt.reserve(nReserve_D0);
-  D0t2_eta.reserve(nReserve_D0);
-  D0t2_phi.reserve(nReserve_D0);
-  D0t2_chg.reserve(nReserve_D0);
-  D0t2_tkIdx.reserve(nReserve_D0);
-  D0t2_Kprob.reserve(nReserve_D0);
-  D0t2_piprob.reserve(nReserve_D0);
-  D0t2_dEdxnmeas.reserve(nReserve_D0);
-  D0t2_dEdxnsat.reserve(nReserve_D0);
-  D0t2_vtxIdx.reserve(nReserve_D0);
-  D0t2_chindof.reserve(nReserve_D0);
-  D0t2_nValid.reserve(nReserve_D0);
-  D0t2_nPix.reserve(nReserve_D0);
-  D0t2_isHighPurity.reserve(nReserve_D0);
-  D0t2_pdgId.reserve(nReserve_D0);
-  D0t2_dxy.reserve(nReserve_D0);
-  D0t2_dz.reserve(nReserve_D0);
-  D0t2_pdgId.reserve(nReserve_D0);
-  D0_pt.reserve(nReserve_D0);
-  D0_eta.reserve(nReserve_D0);
-  D0_phi.reserve(nReserve_D0);
-  D0_rap.reserve(nReserve_D0);
-  D0_mass12.reserve(nReserve_D0);
-  D0_mass21.reserve(nReserve_D0);
-  D0_massKK.reserve(nReserve_D0);
-  D0_simIdx.reserve(nReserve_D0);
-  D0_DstarIdx.reserve(nReserve_D0);
-  D0_ambiPrim.reserve(nReserve_D0);
-  D0_vtxIdx.reserve(nReserve_D0);
-  D0_hasMuon.reserve(nReserve_D0);
-  D0_chi2.reserve(nReserve_D0);
-  D0_dlxy.reserve(nReserve_D0);
-  D0_dlxyErr.reserve(nReserve_D0);
-  D0_dlxySig.reserve(nReserve_D0);
-  D0_cosphixy.reserve(nReserve_D0);
-  D0_dl.reserve(nReserve_D0);
-  D0_dlErr.reserve(nReserve_D0);
-  D0_dlSig.reserve(nReserve_D0);
-  D0_cosphi.reserve(nReserve_D0);
-  D0_ptfrac.reserve(nReserve_D0);
-  D0_ptfrac15.reserve(nReserve_D0);
-  D0_ptfrac10.reserve(nReserve_D0);
-  D0_ptfrac07.reserve(nReserve_D0);
-  D0_ptfrac04.reserve(nReserve_D0);
-  D0_x.reserve(nReserve_D0);
-  D0_y.reserve(nReserve_D0);
-  D0_z.reserve(nReserve_D0);
-  D0_Covxx.reserve(nReserve_D0);
-  D0_Covyx.reserve(nReserve_D0);
-  D0_Covzx.reserve(nReserve_D0);
-  D0_Covyy.reserve(nReserve_D0);
-  D0_Covzy.reserve(nReserve_D0);
-  D0_Covzz.reserve(nReserve_D0);
-  
-  Dstarpis_pt.reserve(nReserve_Dstar);
-  Dstarpis_eta.reserve(nReserve_Dstar);
-  Dstarpis_phi.reserve(nReserve_Dstar);
-  Dstarpis_ptr.reserve(nReserve_Dstar);
-  Dstarpis_etar.reserve(nReserve_Dstar);
-  Dstarpis_phir.reserve(nReserve_Dstar);
-  Dstarpis_chg.reserve(nReserve_Dstar);
-  Dstarpis_tkIdx.reserve(nReserve_Dstar);
-  Dstarpis_Kprob.reserve(nReserve_Dstar);
-  Dstarpis_piprob.reserve(nReserve_Dstar);
-  Dstarpis_dEdxnmeas.reserve(nReserve_Dstar);
-  Dstarpis_dEdxnsat.reserve(nReserve_Dstar);
-  Dstarpis_vtxIdx.reserve(nReserve_Dstar);
-  Dstarpis_chindof.reserve(nReserve_Dstar);
-  Dstarpis_chir.reserve(nReserve_Dstar);
-  Dstarpis_nValid.reserve(nReserve_Dstar);
-  Dstarpis_nPix.reserve(nReserve_Dstar);
-  Dstarpis_dxy.reserve(nReserve_Dstar);
-  Dstarpis_dz.reserve(nReserve_Dstar);
-
-  DstarD0_pt.reserve(nReserve_Dstar);
-  DstarD0_eta.reserve(nReserve_Dstar);
-  DstarD0_phi.reserve(nReserve_Dstar);
-  DstarD0_mass.reserve(nReserve_Dstar);
-  DstarD0_chi2.reserve(nReserve_Dstar);
-  DstarD0_dlxy.reserve(nReserve_Dstar);
-  DstarD0_dlxyErr.reserve(nReserve_Dstar);
-  DstarD0_dlxySig.reserve(nReserve_Dstar);
-  DstarD0_cosphixy.reserve(nReserve_Dstar);
-  DstarD0_dl.reserve(nReserve_Dstar);
-  DstarD0_dlErr.reserve(nReserve_Dstar);
-  DstarD0_dlSig.reserve(nReserve_Dstar);
-  DstarD0_cosphi.reserve(nReserve_Dstar);
-  DstarD0_ptfrac.reserve(nReserve_Dstar); 
-  DstarD0_ptfrac15.reserve(nReserve_Dstar); 
-  DstarD0_ptfrac10.reserve(nReserve_Dstar); 
-  DstarD0_ptfrac07.reserve(nReserve_Dstar); 
-  DstarD0_ptfrac04.reserve(nReserve_Dstar); 
-  DstarD0_x.reserve(nReserve_Dstar); 
-  DstarD0_y.reserve(nReserve_Dstar); 
-  DstarD0_z.reserve(nReserve_Dstar); 
-  DstarD0_simIdx.reserve(nReserve_Dstar); 
-  DstarD0_recIdx.reserve(nReserve_Dstar); 
-  DstarD0_ambiPrim.reserve(nReserve_Dstar);
-
-  DstarK_pt.reserve(nReserve_Dstar);
-  DstarK_eta.reserve(nReserve_Dstar);
-  DstarK_phi.reserve(nReserve_Dstar);
-  DstarK_chg.reserve(nReserve_Dstar);
-  DstarK_tkIdx.reserve(nReserve_Dstar);
-  DstarK_Kprob.reserve(nReserve_Dstar);
-  DstarK_piprob.reserve(nReserve_Dstar);
-  DstarK_dEdxnmeas.reserve(nReserve_Dstar);
-  DstarK_dEdxnsat.reserve(nReserve_Dstar);
-  DstarK_vtxIdx.reserve(nReserve_Dstar);
-  DstarK_chindof.reserve(nReserve_Dstar);
-  DstarK_nValid.reserve(nReserve_Dstar);
-  DstarK_nPix.reserve(nReserve_Dstar);
-  DstarK_isHighPurity.reserve(nReserve_Dstar);
-  DstarK_dxy.reserve(nReserve_Dstar);
-  DstarK_dz.reserve(nReserve_Dstar);
-
-  Dstarpi_pt.reserve(nReserve_Dstar);
-  Dstarpi_eta.reserve(nReserve_Dstar);
-  Dstarpi_phi.reserve(nReserve_Dstar);
-  Dstarpi_chg.reserve(nReserve_Dstar);
-  Dstarpi_tkIdx.reserve(nReserve_Dstar);
-  Dstarpi_Kprob.reserve(nReserve_Dstar);
-  Dstarpi_piprob.reserve(nReserve_Dstar);  
-  Dstarpi_dEdxnmeas.reserve(nReserve_Dstar);
-  Dstarpi_dEdxnsat.reserve(nReserve_Dstar);
-  Dstarpi_vtxIdx.reserve(nReserve_Dstar);
-  Dstarpi_chindof.reserve(nReserve_Dstar);
-  Dstarpi_nValid.reserve(nReserve_Dstar);
-  Dstarpi_nPix.reserve(nReserve_Dstar);
-  Dstarpi_isHighPurity.reserve(nReserve_Dstar);
-  Dstarpi_dxy.reserve(nReserve_Dstar);
-  Dstarpi_dz.reserve(nReserve_Dstar);
-  
-  Dstar_pt.reserve(nReserve_Dstar);
-  Dstar_eta.reserve(nReserve_Dstar);
-  Dstar_phi.reserve(nReserve_Dstar);
-  Dstar_rap.reserve(nReserve_Dstar);
-  Dstar_deltam.reserve(nReserve_Dstar);
-  Dstar_deltamr.reserve(nReserve_Dstar);
-  Dstar_simIdx.reserve(nReserve_Dstar);
-  Dstar_vtxIdx.reserve(nReserve_Dstar);
-  Dstar_hasMuon.reserve(nReserve_Dstar);
-  Dstar_ptfrac.reserve(nReserve_Dstar);
+  // trigger objects 
 
   TrigObj_id.reserve(nReserve_TrigObj);
   TrigObj_filterBits.reserve(nReserve_TrigObj);
@@ -7823,12 +5166,17 @@ NanoAnalyzer::beginJob()
   TrigObj_eta.reserve(nReserve_TrigObj);
   TrigObj_phi.reserve(nReserve_TrigObj);
 
+#ifdef charm
+  //------------------------------- Dmeson reserve --------------------------//
+#include "NanoDmesonReserve.cc.forinclude"
+#endif
+
   //---------------------------- Create branch for tree ------------------------//
   
   // nanoAOD run/event structure 
-  t_event->Branch("run", &run, "run/I");
+  t_event->Branch("run", &run, "run/i");
   t_event->Branch("event", &event, "event/l");
-  t_event->Branch("luminosityBlock", &luminosityBlock, "luminosityBlock/I");
+  t_event->Branch("luminosityBlock", &luminosityBlock, "luminosityBlock/i");
 
   t_event->Branch("CMSSW", &CMSSW, "CMSSW/I");
 
@@ -7836,85 +5184,54 @@ NanoAnalyzer::beginJob()
     // store JSON info
     t_event->Branch("GoodLumisection", &GoodLumisection, "GoodLumisection/O");
     // store dataset info
-    t_event->Branch("MCdataset", &MCdataset, "MCdataset/O");
-    t_event->Branch("ZeroBiasdataset", &ZeroBiasdataset, "ZeroBiasdataset/O");
-    t_event->Branch("MinimumBiasdataset", &MinimumBiasdataset, "MinimumBiasdataset/O");
-    t_event->Branch("Jetdataset", &Jetdataset, "Jetdataset/O");
-    t_event->Branch("MultiJetdataset", &MultiJetdataset, "MultiJetdataset/O");
-    t_event->Branch("Mudataset", &Mudataset, "Mudataset/O");
-    t_event->Branch("MuMonitordataset", &MuMonitordataset, "MuMonitordataset/O");
-    t_event->Branch("DoubleMudataset", &DoubleMudataset, "DoubleMudataset/O");
-    t_event->Branch("MuHaddataset", &MuHaddataset, "MuHaddataset/O");
-    t_event->Branch("MuOniadataset", &MuOniadataset, "MuOniadataset/O");
-    t_event->Branch("Charmoniumdataset", &Charmoniumdataset, "Charmoniumdataset/O");
-    t_event->Branch("BParkingdataset", &BParkingdataset, "BParkingdataset/O");
-    t_event->Branch("BTaudataset", &BTaudataset, "BTaudataset/O");
-    t_event->Branch("Electrondataset", &Electrondataset, "Electrondataset/O");
-    t_event->Branch("DoubleElectrondataset", &DoubleElectrondataset, "DoubleElectrondataset/O");
-    t_event->Branch("Photondataset", &Photondataset, "Photondataset/O");
-    t_event->Branch("EGMonitordataset", &EGMonitordataset, "EGMonitordataset/O");
-    t_event->Branch("MuEGdataset", &MuEGdataset, "MuEGdataset/O");
-    t_event->Branch("Commissioningdataset", &Commissioningdataset, "Commissioningdataset/O");
-    // store trigger bits //
-    t_event->Branch("GoodMinBiasTrigger", &GoodMinBiasTrigger, "GoodMinBiasTrigger/O");
-    t_event->Branch("GoodJetTrigger", &GoodJetTrigger, "GoodJetTrigger/O");
-    t_event->Branch("GoodMuTrigger", &GoodMuTrigger, "GoodMuTrigger/O");
-    t_event->Branch("GoodETrigger", &GoodETrigger, "GoodETrigger/O");
-    // *** check whether the "Trig" and "Trigger" variables are the same 
-    //     (they should be)
-    //t_event->Branch("GoodMinimumBiasTrig", &GoodMinimumBiasTrig, "GoodMinimumBiasTrig/O");
-    //t_event->Branch("GoodJetTrig", &GoodJetTrig, "GoodJetTrig/O");
-    //t_event->Branch("GoodMuTrig", &GoodMuTrig, "GoodMuTrig/O");
-    //t_event->Branch("GoodETrig", &GoodETrig, "GoodETrig/O");
-    // generic bits
-    t_event->Branch("ZeroBiasTrig", &ZeroBiasTrig, "ZeroBiasTrig/O");
-    t_event->Branch("MinimumBiasTrig", &MinimumBiasTrig, "MinimumBiasTrig/O");
-    t_event->Branch("JetTrig", &JetTrig, "JetTrig/O");
-    t_event->Branch("MultiJetTrig", &MultiJetTrig, "MultiJetTrig/O");
-    t_event->Branch("JetMETTauMonitorTrig", &JetMETTauMonitorTrig, "JetMETTauMonitorTrig/O");
-    t_event->Branch("MuTrig", &MuTrig, "MuTrig/O");
-    t_event->Branch("MuHadTrig", &MuHadTrig, "MuHadTrig/O");
-    t_event->Branch("DoubleMuTrig", &DoubleMuTrig, "DoubleMuTrig/O");
-    t_event->Branch("MuEGTrig", &MuEGTrig, "MuEGTrig/O");
-    t_event->Branch("ElectronTrig", &ElectronTrig, "ElectronTrig/O");
-    t_event->Branch("DoubleElectronTrig", &DoubleElectronTrig, "DoubleElectronTrig/O");
-    t_event->Branch("PhotonTrig", &PhotonTrig, "PhotonTrig/O");
-    t_event->Branch("MuMonitorTrig", &MuMonitorTrig, "MuMonitorTrig/O");
-    t_event->Branch("EGMonitorTrig", &EGMonitorTrig, "EGMonitorTrig/O");
-    t_event->Branch("MuOniaTrig", &MuOniaTrig, "MuOniaTrig/O");
-    t_event->Branch("CharmoniumTrig", &CharmoniumTrig, "CharmoniumTrig/O");
-    t_event->Branch("BTauTrig", &BTauTrig, "BTauTrig/O");
-    t_event->Branch("BParkingTrig", &BParkingTrig, "BParkingTrig/O");
-    t_event->Branch("METFwdTrig", &METFwdTrig, "METFwdTrig/O");
-    t_event->Branch("CommissioningTrig", &CommissioningTrig, "CommissioningTrig/O");
-
-    t_event->Branch("ZeroBiasFlag", &ZeroBiasFlag, "ZeroBiasFlag/I");
-    t_event->Branch("MinBiasFlag", &MinBiasFlag, "MinBiasFlag/I");
-    t_event->Branch("MinBiasMult", &MinBiasMult, "MinBiasMult/I");
-    t_event->Branch("MuThresh", &MuThresh, "MuThresh/I");
-    t_event->Branch("MuL1Thresh", &MuL1Thresh, "MuL1Thresh/I");
-    t_event->Branch("MuL2Thresh", &MuL2Thresh, "MuL2Thresh/I");
-    t_event->Branch("IsoMuThresh", &IsoMuThresh, "IsoMuThresh/I");
-    t_event->Branch("DoubleMuThresh", &DoubleMuThresh, "DoubleMuThresh/I");
-    t_event->Branch("JpsiThresh", &JpsiThresh, "JpsiThresh/I");
-    t_event->Branch("MuHadFlag", &MuHadFlag, "MuHadFlag/I");
-    t_event->Branch("MuEGFlag", &MuEGFlag, "MuEGFlag/I");
-    t_event->Branch("ElectronThresh", &ElectronThresh, "ElectronThresh/I");
-    t_event->Branch("DoubleElectronThresh", &DoubleElectronThresh, "DoubleElectronThresh/I");
-    t_event->Branch("PhotonThresh", &PhotonThresh, "PhotonThresh/I");
-    t_event->Branch("JetThresh", &JetThresh, "JetThresh/I");
-    t_event->Branch("DiJetThresh", &DiJetThresh, "DiJetThresh/I");
-    t_event->Branch("TriJetThresh", &TriJetThresh, "TriJetThresh/I");
-    t_event->Branch("QuadJetThresh", &QuadJetThresh, "QuadJetThresh/I");
-    t_event->Branch("HTThresh", &HTThresh, "HTThresh/I");
-    t_event->Branch("BThresh", &BThresh, "BThresh/I");
-    t_event->Branch("METThresh", &METThresh, "METThresh/I");
+    t_event->Branch("Dataset_isMC", &MCdataset, "Dataset_isMC/O");
+    t_event->Branch("Dataset_ZeroBias", &ZeroBiasdataset, "Dataset_ZeroBias/O");
+    t_event->Branch("Dataset_MinimumBias", &MinimumBiasdataset, "Dataset_MinimumBias/O");
+    t_event->Branch("Dataset_Jet", &Jetdataset, "Dataset_Jet/O");
+    t_event->Branch("Dataset_MultiJet", &MultiJetdataset, "Dataset_MultiJet/O");
+    t_event->Branch("Dataset_JetMETTauMonitor", &JetMETTauMonitordataset, "Dataset_JetMETTauMonitor/O");
+    t_event->Branch("Dataset_Mu", &Mudataset, "Dataset_Mu/O");
+    t_event->Branch("Dataset_MuMonitor", &MuMonitordataset, "Dataset_MuMonitor/O");
+    t_event->Branch("Dataset_DoubleMu", &DoubleMudataset, "Dataset_DoubleMu/O");
+    t_event->Branch("Dataset_MuHad", &MuHaddataset, "Dataset_MuHad/O");
+    t_event->Branch("Dataset_MuOnia", &MuOniadataset, "Dataset_MuOnia/O");
+    t_event->Branch("Dataset_Charmonium", &Charmoniumdataset, "Dataset_Charmonium/O");
+    t_event->Branch("Dataset_BParking", &BParkingdataset, "Dataset_BParking/O");
+    t_event->Branch("Dataset_BTau", &BTaudataset, "Dataset_BTau/O");
+    t_event->Branch("Dataset_Electron", &Electrondataset, "Dataset_Electron/O");
+    t_event->Branch("Dataset_DoubleElectron", &DoubleElectrondataset, "Dataset_DoubleElectron/O");
+    t_event->Branch("Dataset_Photon", &Photondataset, "Dataset_Photon/O");
+    t_event->Branch("Dataset_EGMonitor", &EGMonitordataset, "Dataset_EGMonitor/O");
+    t_event->Branch("Dataset_MuEG", &MuEGdataset, "Dataset_MuEG/O");
+    t_event->Branch("Dataset_METFwd", &METFwddataset, "Dataset_METFwd/O");
+    t_event->Branch("Dataset_Commissioning", &Commissioningdataset, "Dataset_Commissioning/O");
+    // and info on which other data sets this event occurs
+    t_event->Branch("Alsoon_ZeroBias", &ZeroBiasTrig, "Alsoon_ZeroBias/O");
+    t_event->Branch("Alsoon_MinimumBias", &MinimumBiasTrig, "Alsoon_MinimumBias/O");
+    t_event->Branch("Alsoon_Jet", &JetTrig, "Alsoon_Jet/O");
+    t_event->Branch("Alsoon_MultiJet", &MultiJetTrig, "Alsoon_MultiJet/O");
+    t_event->Branch("Alsoon_JetMETTauMonitor", &JetMETTauMonitorTrig, "Alsoon_JetMETTauMonitor/O");
+    t_event->Branch("Alsoon_Mu", &MuTrig, "Alsoon_Mu/O");
+    t_event->Branch("Alsoon_MuMonitor", &MuMonitorTrig, "Alsoon_MuMonitor/O");
+    t_event->Branch("Alsoon_DoubleMu", &DoubleMuTrig, "Alsoon_DoubleMu/O");
+    t_event->Branch("Alsoon_MuHad", &MuHadTrig, "Alsoon_MuHad/O");
+    t_event->Branch("Alsoon_MuOnia", &MuOniaTrig, "Alsoon_MuOnia/O");
+    t_event->Branch("Alsoon_Charmonium", &CharmoniumTrig, "Alsoon_Charmonium/O");
+    t_event->Branch("Alsoon_BParking", &BParkingTrig, "Alsoon_BParking/O");
+    t_event->Branch("Alsoon_BTau", &BTauTrig, "Alsoon_BTau/O");
+    t_event->Branch("Alsoon_Electron", &ElectronTrig, "Alsoon_Electron/O");
+    t_event->Branch("Alsoon_DoubleElectron", &DoubleElectronTrig, "Alsoon_DoubleElectron/O");
+    t_event->Branch("Alsoon_Photon", &PhotonTrig, "Alsoon_Photon/O");
+    t_event->Branch("Alsoon_EGMonitor", &EGMonitorTrig, "Alsoon_EGMonitor/O");
+    t_event->Branch("Alsoon_MuEG", &MuEGTrig, "Alsoon_MuEG/O");
+    t_event->Branch("Alsoon_METFwd", &METFwdTrig, "Alsoon_METFwd/O");
+    t_event->Branch("Alsoon_Commissioning", &CommissioningTrig, "Alsoon_Commissioning/O");
 
   //}
 
   if (!isData) {
 
-    cout << "This is MC" << endl;
+    std::cout << "This is MC" << std::endl;
     //---------------------- Create branch of GenPart's tree -------------------//
     
     // official nanoAOD structure
@@ -7923,6 +5240,7 @@ NanoAnalyzer::beginJob()
     t_event->Branch("GenPart_eta", GenPart_eta.data(), "GenPart_eta[nGenPart]/F");
     t_event->Branch("GenPart_phi", GenPart_phi.data(), "GenPart_phi[nGenPart]/F");
     t_event->Branch("GenPart_mass", GenPart_mass.data(), "GenPart_mass[nGenPart]/F");
+    t_event->Branch("GenPart_charge", GenPart_charge.data(), "GenPart_charge[nGenPart]/F");
     t_event->Branch("GenPart_pdgId", GenPart_pdgId.data(), "GenPart_pdgId[nGenPart]/I");
     t_event->Branch("GenPart_status", GenPart_status.data(), "GenPart_status[nGenPart]/I");
     t_event->Branch("GenPart_statusFlags", GenPart_statusFlags.data(), "GenPart_statusFlags[nGenPart]/I");
@@ -7936,6 +5254,7 @@ NanoAnalyzer::beginJob()
       t_event->Branch("GenPart_sparpdgId", GenPart_sparpdgId.data(), "GenPart_sparpdgId[nGenPart]/I");
       t_event->Branch("GenPart_numberOfDaughters", GenPart_numberOfDaughters.data(), "GenPart_numberOfDaughters[nGenPart]/I");
       t_event->Branch("GenPart_nstchgdaug", GenPart_nstchgdaug.data(), "GenPart_nstchgdaug[nGenPart]/I");
+      t_event->Branch("GenPart_promptFlag", GenPart_promptFlag.data(), "GenPart_promptFlag[nGenPart]/I");
       t_event->Branch("GenPart_vx", GenPart_vx.data(), "GenPart_vx[nGenPart]/F");
       t_event->Branch("GenPart_vy", GenPart_vy.data(), "GenPart_vy[nGenPart]/F");
       t_event->Branch("GenPart_vz", GenPart_vz.data(), "GenPart_vz[nGenPart]/F");
@@ -8040,6 +5359,7 @@ NanoAnalyzer::beginJob()
   t_event->Branch("Muon_pfRelIso03_all", Muon_pfRelIso03_all.data(), "Muon_pfRelIso03_all[nMuon]/F");
   t_event->Branch("Muon_pfRelIso03_chg", Muon_pfRelIso03_chg.data(), "Muon_pfRelIso03_chg[nMuon]/F");  
   t_event->Branch("Muon_pfRelIso04_all", Muon_pfRelIso04_all.data(), "Muon_pfRelIso04_all[nMuon]/F");
+  t_event->Branch("Muon_pfIsoId", Muon_pfIsoId.data(), "Muon_pfIsoId[nMuon]/I");
   t_event->Branch("Muon_miniPFRelIso_all", Muon_miniPFRelIso_all.data(), "Muon_miniPFRelIso_all[nMuon]/F");
   t_event->Branch("Muon_miniPFRelIso_chg", Muon_miniPFRelIso_chg.data(), "Muon_miniPFRelIso_chg[nMuon]/F");
   t_event->Branch("Muon_jetIdx", Muon_jetIdx.data(), "Muon_jetIdx[nMuon]/I");
@@ -8091,19 +5411,19 @@ NanoAnalyzer::beginJob()
     t_event->Branch("Muon_trkIdx", Muon_trkIdx.data(), "Muon_trkIdx[nMuon]/I");
     t_event->Branch("Muon_simIdx", Muon_simIdx.data(), "Muon_simIdx[nMuon]/I");
     // temporary
-    t_event->Branch("b4_nMuon", &b4_nMuon, "b4_nMuon/i");  
+    //t_event->Branch("b4_nMuon", &b4_nMuon, "b4_nMuon/i");  
     t_event->Branch("Muon_nNano", &Muon_nNano, "Muon_nNano/i");  
 
     //
     // Dimuon branches 
     //
-    t_event->Branch("nDimu", &nDimu, "nDimu/I");  
-    t_event->Branch("Dimut1_muIdx", Dimut1_muIdx.data(), "Dimut1_muIdx[nDimu]/I");
-    t_event->Branch("Dimut1_dxy", Dimut1_dxy.data(), "Dimut1_dxy[nDimu]/F");
-    t_event->Branch("Dimut1_dz", Dimut1_dz.data(), "Dimut1_dz[nDimu]/F");
-    t_event->Branch("Dimut2_muIdx", Dimut2_muIdx.data(), "Dimut2_muIdx[nDimu]/I");
-    t_event->Branch("Dimut2_dxy", Dimut2_dxy.data(), "Dimut2_dxy[nDimu]/F");
-    t_event->Branch("Dimut2_dz", Dimut2_dz.data(), "Dimut2_dz[nDimu]/F");
+    t_event->Branch("nDimu", &nDimu, "nDimu/i");  
+    t_event->Branch("Dimu_t1muIdx", Dimu_t1muIdx.data(), "Dimu_t1muIdx[nDimu]/I");
+    t_event->Branch("Dimu_t1dxy", Dimu_t1dxy.data(), "Dimu_t1dxy[nDimu]/F");
+    t_event->Branch("Dimu_t1dz", Dimu_t1dz.data(), "Dimu_t1dz[nDimu]/F");
+    t_event->Branch("Dimu_t2muIdx", Dimu_t2muIdx.data(), "Dimu_t2muIdx[nDimu]/I");
+    t_event->Branch("Dimu_t2dxy", Dimu_t2dxy.data(), "Dimu_t2dxy[nDimu]/F");
+    t_event->Branch("Dimu_t2dz", Dimu_t2dz.data(), "Dimu_t2dz[nDimu]/F");
 
     t_event->Branch("Dimu_pt", Dimu_pt.data(), "Dimu_pt[nDimu]/F");
     t_event->Branch("Dimu_eta", Dimu_eta.data(), "Dimu_eta[nDimu]/F");
@@ -8139,7 +5459,7 @@ NanoAnalyzer::beginJob()
 
   //----------------------- Stefan Wunsch variables + more -------------------//
   // official nanoAOD subset //
-
+/* 
   // Electrons
   t_event->Branch("nElectron", &value_el_n, "nElectron/i");
   t_event->Branch("Electron_pt", value_el_pt, "Electron_pt[nElectron]/F");
@@ -8193,6 +5513,11 @@ NanoAnalyzer::beginJob()
   t_event->Branch("Electron_SCeta", value_el_SCeta, "Electron_SCeta[nElectron]/F");
   t_event->Branch("Electron_cutBased", value_el_cutBased, "Electron_cutBased[nElectron]/I");
 
+  t_event->Branch("Electron_x", value_el_x, "Electron_x[nElectron]/F");
+  t_event->Branch("Electron_y", value_el_y, "Electron_y[nElectron]/F");
+  t_event->Branch("Electron_z", value_el_z, "Electron_z[nElectron]/F");
+  t_event->Branch("Electron_vtxIdx", value_el_vtxIdx, "Electron_vtxIdx[nElectron]/I");
+
   t_event->Branch("Electron_dxy", value_el_dxy, "Electron_dxy[nElectron]/F");
   t_event->Branch("Electron_dxyErr", value_el_dxyErr, "Electron_dxyErr[nElectron]/F");
   t_event->Branch("Electron_dz", value_el_dz, "Electron_dz[nElectron]/F");
@@ -8238,6 +5563,7 @@ NanoAnalyzer::beginJob()
   // Jets
   t_event->Branch("nJet", &value_jet_n, "nJet/i");
   t_event->Branch("Jet_pt", value_jet_pt, "Jet_pt[nJet]/F");
+  t_event->Branch("Jet_ptuncor", value_jet_ptuncor, "Jet_ptuncor[nJet]/F");
   t_event->Branch("Jet_eta", value_jet_eta, "Jet_eta[nJet]/F");
   t_event->Branch("Jet_phi", value_jet_phi, "Jet_phi[nJet]/F");
   t_event->Branch("Jet_mass", value_jet_mass, "Jet_mass[nJet]/F");
@@ -8250,6 +5576,44 @@ NanoAnalyzer::beginJob()
   t_event->Branch("Jet_chHEF", value_jet_chHEF, "Jet_chHEF[nJet]/F");
   t_event->Branch("Jet_neEmEF", value_jet_neEmEF, "Jet_neEmEF[nJet]/F");
   t_event->Branch("Jet_neHEF", value_jet_neHEF, "Jet_neHEF[nJet]/F");
+  // input values to jetId not stored (for the time being)
+  t_event->Branch("Jet_jetId",value_jet_id, "Jet_jetId[nJet]/i");
+
+ if (!isData) {
+  // GenJets //Qun
+  t_event->Branch("nGenJet", &value_gjet_n, "nGenJet/i");
+  t_event->Branch("GenJet_pt", value_gjet_pt, "GenJet_pt[nGenJet]/F");
+  t_event->Branch("GenJet_eta", value_gjet_eta, "GenJet_eta[nGenJet]/F");
+  t_event->Branch("GenJet_phi", value_gjet_phi, "GenJet_phi[nGenJet]/F");
+  t_event->Branch("GenJet_mass", value_gjet_mass, "GenJet_mass[nGenJet]/F");
+ }
+
+  // FatJets
+  t_event->Branch("nFatJet", &value_fatjet_n, "nFatJet/i");
+  t_event->Branch("FatJet_pt", value_fatjet_pt, "FatJet_pt[nFatJet]/F");
+  t_event->Branch("FatJet_eta", value_fatjet_eta, "FatJet_eta[nFatJet]/F");
+  t_event->Branch("FatJet_phi", value_fatjet_phi, "FatJet_phi[nFatJet]/F");
+  t_event->Branch("FatJet_mass", value_fatjet_mass, "FatJet_mass[nFatJet]/F");
+  t_event->Branch("FatJet_area", value_fatjet_area, "FatJet_area[nFatJet]/F");
+  t_event->Branch("FatJet_nConstituents", value_fatjet_nConstituents, "FatJet_nConstituents[nFatJet]/i");
+  t_event->Branch("FatJet_nElectrons", value_fatjet_nElectrons, "FatJet_nElectrons[nFatJet]/i");
+  t_event->Branch("FatJet_nMuons", value_fatjet_nMuons, "FatJet_nMuons[nFatJet]/i");
+  t_event->Branch("FatJet_chEmEF", value_fatjet_chEmEF, "FatJet_chEmEF[nFatJet]/F");
+  t_event->Branch("FatJet_chHEF", value_fatjet_chHEF, "FatJet_chHEF[nFatJet]/F");
+  t_event->Branch("FatJet_neEmEF", value_fatjet_neEmEF, "FatJet_neEmEF[nFatJet]/F");
+  t_event->Branch("FatJet_neHEF", value_fatjet_neHEF, "FatJet_neHEF[nFatJet]/F");
+
+  // TrackJets
+  t_event->Branch("nTrackJet", &value_trackjet_n, "nTrackJet/i");
+  t_event->Branch("TrackJet_pt", value_trackjet_pt, "TrackJet_pt[nTrackJet]/F");
+  t_event->Branch("TrackJet_eta", value_trackjet_eta, "TrackJet_eta[nTrackJet]/F");
+  t_event->Branch("TrackJet_phi", value_trackjet_phi, "TrackJet_phi[nTrackJet]/F");
+  t_event->Branch("TrackJet_mass", value_trackjet_mass, "TrackJet_mass[nTrackJet]/F");
+  t_event->Branch("TrackJet_area", value_trackjet_area, "TrackJet_area[nTrackJet]/F");
+  t_event->Branch("TrackJet_nConstituents", value_trackjet_nConstituents, "TrackJet_nConstituents[nTrackJet]/i");
+  t_event->Branch("TrackJet_nElectrons", value_trackjet_nElectrons, "TrackJet_nElectrons[nTrackJet]/i");
+  t_event->Branch("TrackJet_nMuons", value_trackjet_nMuons, "TrackJet_nMuons[nTrackJet]/i"); */
+
 
   // Flags
   if (!custom_flag.empty())
@@ -8259,196 +5623,51 @@ NanoAnalyzer::beginJob()
     t_event->Branch(("Flag_" + custom_flag.at(iFlag)).c_str(), &custom_bit.at(iFlag), ("Flag_" + custom_flag.at(iFlag) + "/O").c_str());
   }
 
-  //----------------------- Create branch of Dmeson's tree ---------------------//
-  
-  if (nanoext) {
-    // * = only booked branch, filled it with nonsense atm 
-    t_event->Branch("nD0", &nD0, "nD0/I");  
-    t_event->Branch("D0t1_pt", D0t1_pt.data(), "D0t1_pt[nD0]/F");
-    t_event->Branch("D0t1_eta", D0t1_eta.data(), "D0t1_eta[nD0]/F");
-    t_event->Branch("D0t1_phi", D0t1_phi.data(), "D0t1_phi[nD0]/F");
-    t_event->Branch("D0t1_chg", D0t1_chg.data(), "D0t1_chg[nD0]/I");
-    t_event->Branch("D0t1_tkIdx", D0t1_tkIdx.data(), "D0t1_tkIdx[nD0]/I"); // *
-    t_event->Branch("D0t1_Kprob", D0t1_Kprob.data(), "D0t1_Kprob[nD0]/F"); // *
-    t_event->Branch("D0t1_piprob", D0t1_piprob.data(), "D0t1_piprob[nD0]/F"); // *
-    t_event->Branch("D0t1_dEdxnmeas", D0t1_dEdxnmeas.data(), "D0t1_dEdxnmeas[nD0]/I"); // *
-    t_event->Branch("D0t1_dEdxnsat", D0t1_dEdxnsat.data(), "D0t1_dEdxnsat[nD0]/I"); // *
-    t_event->Branch("D0t1_vtxIdx", D0t1_vtxIdx.data(), "D0t1_vtxIdx[nD0]/I");
-    t_event->Branch("D0t1_chindof", D0t1_chindof.data(), "D0t1_chindof[nD0]/F");
-    t_event->Branch("D0t1_nValid", D0t1_nValid.data(), "D0t1_nValid[nD0]/I");
-    t_event->Branch("D0t1_nPix", D0t1_nPix.data(), "D0t1_nPix[nD0]/I");
-    t_event->Branch("D0t1_isHighPurity", D0t1_isHighPurity.data(), "D0t1_isHighPurity[nD0]/O");
-    t_event->Branch("D0t1_dxy", D0t1_dxy.data(), "D0t1_dxy[nD0]/F");
-    t_event->Branch("D0t1_dz", D0t1_dz.data(), "D0t1_dz[nD0]/F");
-    t_event->Branch("D0t1_pdgId", D0t1_pdgId.data(), "D0t1_pdgId[nD0]/I");
-    t_event->Branch("D0t2_pt", D0t2_pt.data(), "D0t2_pt[nD0]/F");
-    t_event->Branch("D0t2_eta", D0t2_eta.data(), "D0t2_eta[nD0]/F");
-    t_event->Branch("D0t2_phi", D0t2_phi.data(), "D0t2_phi[nD0]/F");
-    t_event->Branch("D0t2_chg", D0t2_chg.data(), "D0t2_chg[nD0]/I");
-    t_event->Branch("D0t2_tkIdx", D0t2_tkIdx.data(), "D0t2_tkIdx[nD0]/I"); // *
-    t_event->Branch("D0t2_Kprob", D0t2_Kprob.data(), "D0t2_Kprob[nD0]/F"); // *
-    t_event->Branch("D0t2_piprob", D0t2_piprob.data(), "D0t2_piprob[nD0]/F"); // *
-    t_event->Branch("D0t2_dEdxnmeas", D0t2_dEdxnmeas.data(), "D0t2_dEdxnmeas[nD0]/I"); // *
-    t_event->Branch("D0t2_dEdxnsat", D0t2_dEdxnsat.data(), "D0t2_dEdxnsat[nD0]/I"); // *
-    t_event->Branch("D0t2_vtxIdx", D0t2_vtxIdx.data(), "D0t2_vtxIdx[nD0]/I");
-    t_event->Branch("D0t2_chindof", D0t2_chindof.data(), "D0t2_chindof[nD0]/F");
-    t_event->Branch("D0t2_nValid", D0t2_nValid.data(), "D0t2_nValid[nD0]/I");
-    t_event->Branch("D0t2_nPix", D0t2_nPix.data(), "D0t2_nPix[nD0]/I");
-    t_event->Branch("D0t2_isHighPurity", D0t2_isHighPurity.data(), "D0t2_isHighPurity[nD0]/O");
-    t_event->Branch("D0t2_dxy", D0t2_dxy.data(), "D0t2_dxy[nD0]/F");
-    t_event->Branch("D0t2_dz", D0t2_dz.data(), "D0t2_dz[nD0]/F");
-    t_event->Branch("D0t2_pdgId", D0t2_pdgId.data(), "D0t2_pdgId[nD0]/I");
-    t_event->Branch("D0_pt", D0_pt.data(), "D0_pt[nD0]/F");
-    t_event->Branch("D0_eta", D0_eta.data(), "D0_eta[nD0]/F");
-    t_event->Branch("D0_phi", D0_phi.data(), "D0_phi[nD0]/F");
-    t_event->Branch("D0_rap", D0_rap.data(), "D0_rap[nD0]/F");
-    t_event->Branch("D0_mass12", D0_mass12.data(), "D0_mass12[nD0]/F");
-    t_event->Branch("D0_mass21", D0_mass21.data(), "D0_mass21[nD0]/F");
-    t_event->Branch("D0_massKK", D0_massKK.data(), "D0_massKK[nD0]/F");
-    t_event->Branch("D0_simIdx", D0_simIdx.data(), "D0_simIdx[nD0]/I");
-    t_event->Branch("D0_DstarIdx", D0_DstarIdx.data(), "D0_DstarIdx[nD0]/I");
-    t_event->Branch("D0_ambiPrim", D0_ambiPrim.data(), "D0_ambiPrim[nD0]/O");
-    t_event->Branch("D0_vtxIdx", D0_vtxIdx.data(), "D0_vtxIdx[nD0]/I");
-    t_event->Branch("D0_hasMuon", D0_hasMuon.data(), "D0_hasMuon[nD0]/O");
-    t_event->Branch("D0_chi2", D0_chi2.data(), "D0_chi2[nD0]/F");
-    t_event->Branch("D0_dlxy", D0_dlxy.data(), "D0_dlxy[nD0]/F");
-    t_event->Branch("D0_dlxyErr", D0_dlxyErr.data(), "D0_dlxyErr[nD0]/F");
-    t_event->Branch("D0_dlxySig", D0_dlxySig.data(), "D0_dlxySig[nD0]/F");
-    t_event->Branch("D0_cosphixy", D0_cosphixy.data(), "D0_cosphixy[nD0]/F");
-    t_event->Branch("D0_dl", D0_dl.data(), "D0_dl[nD0]/F");
-    t_event->Branch("D0_dlErr", D0_dlErr.data(), "D0_dlErr[nD0]/F");
-    t_event->Branch("D0_dlSig", D0_dlSig.data(), "D0_dlSig[nD0]/F");
-    t_event->Branch("D0_cosphi", D0_cosphi.data(), "D0_cosphi[nD0]/F");
-    t_event->Branch("D0_ptfrac", D0_ptfrac.data(), "D0_ptfrac[nD0]/F");
-    t_event->Branch("D0_ptfrac15", D0_ptfrac15.data(), "D0_ptfrac15[nD0]/F");
-    t_event->Branch("D0_ptfrac10", D0_ptfrac10.data(), "D0_ptfrac10[nD0]/F");
-    t_event->Branch("D0_ptfrac07", D0_ptfrac07.data(), "D0_ptfrac07[nD0]/F");
-    t_event->Branch("D0_ptfrac04", D0_ptfrac04.data(), "D0_ptfrac04[nD0]/F");
-    t_event->Branch("D0_x", D0_x.data(), "D0_x[nD0]/F");
-    t_event->Branch("D0_y", D0_y.data(), "D0_y[nD0]/F");
-    t_event->Branch("D0_z", D0_z.data(), "D0_z[nD0]/F");
-    if (covout) {
-      t_event->Branch("D0_Covxx", D0_Covxx.data(), "D0_Covxx[nD0]/F");
-      t_event->Branch("D0_Covyx", D0_Covyx.data(), "D0_Covyx[nD0]/F");
-      t_event->Branch("D0_Covzx", D0_Covzx.data(), "D0_Covzx[nD0]/F");
-      t_event->Branch("D0_Covyy", D0_Covyy.data(), "D0_Covyy[nD0]/F");
-      t_event->Branch("D0_Covzy", D0_Covzy.data(), "D0_Covzy[nD0]/F");
-      t_event->Branch("D0_Covzz", D0_Covzz.data(), "D0_Covzz[nD0]/F");
-    }
+#ifdef charm
+  //----------------------- Create branches of Dmeson's tree ---------------------//
+#include "NanoDmesonBranch.cc.forinclude"
+#endif
 
-    t_event->Branch("nDstar", &nDstar, "nDstar/I");    
-    t_event->Branch("Dstarpis_pt", Dstarpis_pt.data(), "Dstarpis_pt[nDstar]/F");
-    t_event->Branch("Dstarpis_eta", Dstarpis_eta.data(), "Dstarpis_eta[nDstar]/F");
-    t_event->Branch("Dstarpis_phi", Dstarpis_phi.data(), "Dstarpis_phi[nDstar]/F");
-    t_event->Branch("Dstarpis_ptr", Dstarpis_ptr.data(), "Dstarpis_ptr[nDstar]/F");
-    t_event->Branch("Dstarpis_etar", Dstarpis_etar.data(), "Dstarpis_etar[nDstar]/F");
-    t_event->Branch("Dstarpis_phir", Dstarpis_phir.data(), "Dstarpis_phir[nDstar]/F");
-    t_event->Branch("Dstarpis_chg", Dstarpis_chg.data(), "Dstarpis_chg[nDstar]/I");
-    t_event->Branch("Dstarpis_tkIdx", Dstarpis_tkIdx.data(), "Dstarpis_tkIdx[nDstar]/I");
-    t_event->Branch("Dstarpis_Kprob", Dstarpis_Kprob.data(), "Dstarpis_Kprob[nDstar]/F"); // *
-    t_event->Branch("Dstarpis_piprob", Dstarpis_piprob.data(), "Dstarpis_piprob[nDstar]/F"); // *
-    t_event->Branch("Dstarpis_dEdxnmeas", Dstarpis_dEdxnmeas.data(), "Dstarpis_dEdxnmeas[nDstar]/I"); // *
-    t_event->Branch("Dstarpis_dEdxnsat", Dstarpis_dEdxnsat.data(), "Dstarpis_dEdxnsat[nDstar]/I"); // *
-    t_event->Branch("Dstarpis_vtxIdx", Dstarpis_vtxIdx.data(), "Dstarpis_vtxIdx[nDstar]/I");
-    t_event->Branch("Dstarpis_chindof", Dstarpis_chindof.data(), "Dstarpis_chindof[nDstar]/F");
-    t_event->Branch("Dstarpis_chir", Dstarpis_chir.data(), "Dstarpis_chir[nDstar]/F");
-    t_event->Branch("Dstarpis_nValid", Dstarpis_nValid.data(), "Dstarpis_nValid[nDstar]/I");
-    t_event->Branch("Dstarpis_nPix", Dstarpis_nPix.data(), "Dstarpis_nPix[nDstar]/I");
-    t_event->Branch("Dstarpis_dxy", Dstarpis_dxy.data(), "Dstarpis_dxy[nDstar]/F");
-    t_event->Branch("Dstarpis_dz", Dstarpis_dz.data(), "Dstarpis_dz[nDstar]/F");
-  
-    t_event->Branch("DstarD0_pt", DstarD0_pt.data(), "DstarD0_pt[nDstar]/F");
-    t_event->Branch("DstarD0_eta", DstarD0_eta.data(), "DstarD0_eta[nDstar]/F");
-    t_event->Branch("DstarD0_phi", DstarD0_phi.data(), "DstarD0_phi[nDstar]/F");
-    t_event->Branch("DstarD0_mass", DstarD0_mass.data(), "DstarD0_mass[nDstar]/F");
-    t_event->Branch("DstarD0_chi2", DstarD0_chi2.data(), "DstarD0_chi2[nDstar]/F");
-    t_event->Branch("DstarD0_dlxy", DstarD0_dlxy.data(), "DstarD0_dlxy[nDstar]/F");
-    t_event->Branch("DstarD0_dlxyErr", DstarD0_dlxyErr.data(), "DstarD0_dlxyErr[nDstar]/F");
-    t_event->Branch("DstarD0_dlxySig", DstarD0_dlxySig.data(), "DstarD0_dlxySig[nDstar]/F");
-    t_event->Branch("DstarD0_cosphixy", DstarD0_cosphixy.data(), "DstarD0_cosphixy[nDstar]/F");
-    t_event->Branch("DstarD0_dl", DstarD0_dl.data(), "DstarD0_dl[nDstar]/F");
-    t_event->Branch("DstarD0_dlErr", DstarD0_dlErr.data(), "DstarD0_dlErr[nDstar]/F");
-    t_event->Branch("DstarD0_dlSig", DstarD0_dlSig.data(), "DstarD0_dlSig[nDstar]/F");
-    t_event->Branch("DstarD0_cosphi", DstarD0_cosphi.data(), "DstarD0_cosphi[nDstar]/F");
-    t_event->Branch("DstarD0_ptfrac", DstarD0_ptfrac.data(), "DstarD0_ptfrac[nDstar]/F");
-    t_event->Branch("DstarD0_ptfrac15", DstarD0_ptfrac15.data(), "DstarD0_ptfrac15[nDstar]/F");
-    t_event->Branch("DstarD0_ptfrac10", DstarD0_ptfrac10.data(), "DstarD0_ptfrac10[nDstar]/F");
-    t_event->Branch("DstarD0_ptfrac07", DstarD0_ptfrac07.data(), "DstarD0_ptfrac07[nDstar]/F");
-    t_event->Branch("DstarD0_ptfrac04", DstarD0_ptfrac04.data(), "DstarD0_ptfrac04[nDstar]/F");
-    t_event->Branch("DstarD0_x", DstarD0_x.data(), "DstarD0_x[nDstar]/F");
-    t_event->Branch("DstarD0_y", DstarD0_y.data(), "DstarD0_y[nDstar]/F");
-    t_event->Branch("DstarD0_z", DstarD0_z.data(), "DstarD0_z[nDstar]/F");
-    t_event->Branch("DstarD0_simIdx", DstarD0_simIdx.data(), "DstarD0_simIdx[nDstar]/I");
-    t_event->Branch("DstarD0_recIdx", DstarD0_recIdx.data(), "DstarD0_recIdx[nDstar]/I");
-    t_event->Branch("DstarD0_ambiPrim", DstarD0_ambiPrim.data(), "DstarD0_ambiPrim[nDstar]/O");
-
-    t_event->Branch("DstarK_pt", DstarK_pt.data(), "DstarK_pt[nDstar]/F");
-    t_event->Branch("DstarK_eta", DstarK_eta.data(), "DstarK_eta[nDstar]/F");
-    t_event->Branch("DstarK_phi", DstarK_phi.data(), "DstarK_phi[nDstar]/F");
-    t_event->Branch("DstarK_chg", DstarK_chg.data(), "DstarK_chg[nDstar]/I");
-    t_event->Branch("DstarK_tkIdx", DstarK_tkIdx.data(), "DstarK_tkIdx[nDstar]/I");
-    t_event->Branch("DstarK_Kprob", DstarK_Kprob.data(), "DstarK_Kprob[nDstar]/F"); // *
-    t_event->Branch("DstarK_piprob", DstarK_piprob.data(), "DstarK_piprob[nDstar]/F"); // *
-    t_event->Branch("DstarK_dEdxnmeas", DstarK_dEdxnmeas.data(), "DstarK_dEdxnmeas[nDstar]/I"); // *
-    t_event->Branch("DstarK_dEdxnsat", DstarK_dEdxnsat.data(), "DstarK_dEdxnsat[nDstar]/I"); // *
-    t_event->Branch("DstarK_vtxIdx", DstarK_vtxIdx.data(), "DstarK_vtxIdx[nDstar]/I");
-    t_event->Branch("DstarK_chindof", DstarK_chindof.data(), "DstarK_chindof[nDstar]/F");
-    t_event->Branch("DstarK_nValid", DstarK_nValid.data(), "DstarK_nValid[nDstar]/I");
-    t_event->Branch("DstarK_nPix", DstarK_nPix.data(), "DstarK_nPix[nDstar]/I");
-    t_event->Branch("DstarK_isHighPurity", DstarK_isHighPurity.data(), "DstarK_isHighPurity[nDstar]/O");
-    t_event->Branch("DstarK_dxy", DstarK_dxy.data(), "DstarK_dxy[nDstar]/F");
-    t_event->Branch("DstarK_dz", DstarK_dz.data(), "DstarK_dz[nDstar]/F");
-
-    t_event->Branch("Dstarpi_pt", Dstarpi_pt.data(), "Dstarpi_pt[nDstar]/F");
-    t_event->Branch("Dstarpi_eta", Dstarpi_eta.data(), "Dstarpi_eta[nDstar]/F");
-    t_event->Branch("Dstarpi_phi", Dstarpi_phi.data(), "Dstarpi_phi[nDstar]/F");
-    t_event->Branch("Dstarpi_chg", Dstarpi_chg.data(), "Dstarpi_chg[nDstar]/I");
-    t_event->Branch("Dstarpi_tkIdx", Dstarpi_tkIdx.data(), "Dstarpi_tkIdx[nDstar]/I");
-    t_event->Branch("Dstarpi_Kprob", Dstarpi_Kprob.data(), "Dstarpi_Kprob[nDstar]/F"); // *
-    t_event->Branch("Dstarpi_piprob", Dstarpi_piprob.data(), "Dstarpi_piprob[nDstar]/F"); // *
-    t_event->Branch("Dstarpi_dEdxnmeas", Dstarpi_dEdxnmeas.data(), "Dstarpi_dEdxnmeas[nDstar]/I"); // *
-    t_event->Branch("Dstarpi_dEdxnsat", Dstarpi_dEdxnsat.data(), "Dstarpi_dEdxnsat[nDstar]/I"); // *
-    t_event->Branch("Dstarpi_vtxIdx", Dstarpi_vtxIdx.data(), "Dstarpi_vtxIdx[nDstar]/I");
-    t_event->Branch("Dstarpi_chindof", Dstarpi_chindof.data(), "Dstarpi_chindof[nDstar]/F");
-    t_event->Branch("Dstarpi_nValid", Dstarpi_nValid.data(), "Dstarpi_nValid[nDstar]/I");
-    t_event->Branch("Dstarpi_nPix", Dstarpi_nPix.data(), "Dstarpi_nPix[nDstar]/I");
-    t_event->Branch("Dstarpi_isHighPurity", Dstarpi_isHighPurity.data(), "Dstarpi_isHighPurity[nDstar]/O");
-    t_event->Branch("Dstarpi_dxy", Dstarpi_dxy.data(), "Dstarpi_dxy[nDstar]/F");
-    t_event->Branch("Dstarpi_dz", Dstarpi_dz.data(), "Dstarpi_dz[nDstar]/F");
-  
-    t_event->Branch("Dstar_pt", Dstar_pt.data(), "Dstar_pt[nDstar]/F");
-    t_event->Branch("Dstar_eta", Dstar_eta.data(), "Dstar_eta[nDstar]/F");
-    t_event->Branch("Dstar_phi", Dstar_phi.data(), "Dstar_phi[nDstar]/F");
-    t_event->Branch("Dstar_rap", Dstar_rap.data(), "Dstar_rap[nDstar]/F");
-    t_event->Branch("Dstar_deltam", Dstar_deltam.data(), "Dstar_deltam[nDstar]/F");
-    t_event->Branch("Dstar_deltamr", Dstar_deltamr.data(), "Dstar_deltamr[nDstar]/F");
-    t_event->Branch("Dstar_simIdx", Dstar_simIdx.data(), "Dstar_simIdx[nDstar]/I");
-    t_event->Branch("Dstar_vtxIdx", Dstar_vtxIdx.data(), "Dstar_vtxIdx[nDstar]/I");
-    t_event->Branch("Dstar_hasMuon", Dstar_hasMuon.data(), "Dstar_hasMuon[nDstar]/O");
-    t_event->Branch("Dstar_ptfrac", Dstar_ptfrac.data(), "Dstar_ptfrac[nDstar]/F");
-  } // end of nanoext
-
-// *** move to different place? ***
-  // Qun below  Trigger Object
+// trigger objects
   t_event->Branch("nTrigObj", &nTrigObj, "nTrigObj/I");    
   t_event->Branch("TrigObj_id", TrigObj_id.data(), "TrigObj_id[nTrigObj]/I");
-  t_event->Branch("TrigObj_filterBits", TrigObj_filterBits.data(), "TrigObj_FilterBits[nTrigObj]/I");
+  t_event->Branch("TrigObj_filterBits", TrigObj_filterBits.data(), "TrigObj_filterBits[nTrigObj]/I");
   t_event->Branch("TrigObj_pt", TrigObj_pt.data(), "TrigObj_pt[nTrigObj]/F");
   t_event->Branch("TrigObj_phi", TrigObj_phi.data(), "TrigObj_phi[nTrigObj]/F");
   t_event->Branch("TrigObj_eta", TrigObj_eta.data(), "TrigObj_eta[nTrigObj]/F");
-  //t_event->Branch("TrigObj_id", &TrigObj_id);
-  //t_event->Branch("TrigObj_pt", &TrigObj_pt);
-  //t_event->Branch("TrigObj_phi", &TrigObj_phi);
-  //t_event->Branch("TrigObj_eta", &TrigObj_eta);
-  //t_event->Branch("TrigObj_id", TrigObj_id, "TrigObj_id[nTrigObj]/I");
-  //t_event->Branch("TrigObj_pt", TrigObj_pt, "TrigObj_pt[nTrigObj]/F");
-  //t_event->Branch("TrigObj_phi", TrigObj_phi, "TrigObj_phi[nTrigObj]/F");
-  //t_event->Branch("TrigObj_eta", TrigObj_eta, "TrigObj_eta[nTrigObj]/F");
-  //Qt_event->Branch("TrigObj_id", TrigObj_id.data(), "TrigObj_id[nTrigObj]/I");
-  //Qt_event->Branch("TrigObj_pt", TrigObj_pt.data(), "TrigObj_pt[nTrigObj]/F");
-  //Qt_event->Branch("TrigObj_phi", TrigObj_phi.data(), "TrigObj_phi[nTrigObj]/F");
-  //Qt_event->Branch("TrigObj_eta", TrigObj_eta.data(), "TrigObj_eta[nTrigObj]/F");
-  // Qun above  Trigger Object   
+
+  // store cross-dataset "good" trigger Flags //
+  // the "GoodxTrig" and "GoodxTrigger" variables are the same 
+  t_event->Branch("Trig_goodMinBiasTrigger", &GoodMinBiasTrigger, "Trig_goodMinBiasTrigger/O");
+  t_event->Branch("Trig_goodJetTrigger", &GoodJetTrigger, "Trig_goodJetTrigger/O");
+  t_event->Branch("Trig_goodMuTrigger", &GoodMuTrigger, "Trig_goodMuTrigger/O");
+  t_event->Branch("Trig_goodETrigger", &GoodETrigger, "Trig_goodETrigger/O");
+
+  // cross-dataset trigger flags and thresholds 
+  t_event->Branch("Trig_ZeroBiasFlag", &ZeroBiasFlag, "Trig_ZeroBiasFlag/I");
+  t_event->Branch("Trig_MinBiasFlag", &MinBiasFlag, "Trig_MinBiasFlag/I");
+  t_event->Branch("Trig_MinBiasMult", &MinBiasMult, "Trig_MinBiasMult/I");
+  t_event->Branch("Trig_MuThresh", &MuThresh, "Trig_MuThresh/I");
+  t_event->Branch("Trig_MuL1Thresh", &MuL1Thresh, "Trig_MuL1Thresh/I");
+  t_event->Branch("Trig_MuL2Thresh", &MuL2Thresh, "Trig_MuL2Thresh/I");
+  t_event->Branch("Trig_IsoMuThresh", &IsoMuThresh, "Trig_IsoMuThresh/I");
+  t_event->Branch("Trig_DoubleMuThresh", &DoubleMuThresh, "Trig_DoubleMuThresh/I");
+  t_event->Branch("Trig_JpsiThresh", &JpsiThresh, "Trig_JpsiThresh/I");
+  t_event->Branch("Trig_MuHadFlag", &MuHadFlag, "Trig_MuHadFlag/I");
+  t_event->Branch("Trig_MuEGFlag", &MuEGFlag, "Trig_MuEGFlag/I");
+  t_event->Branch("Trig_ElectronThresh", &ElectronThresh, "Trig_ElectronThresh/I");
+  t_event->Branch("Trig_DoubleElectronThresh", &DoubleElectronThresh, "Trig_DoubleElectronThresh/I");
+  t_event->Branch("Trig_PhotonThresh", &PhotonThresh, "Trig_PhotonThresh/I");
+  t_event->Branch("Trig_JetThresh", &JetThresh, "Trig_JetThresh/I");
+  t_event->Branch("Trig_DiJetThresh", &DiJetThresh, "Trig_DiJetThresh/I");
+  t_event->Branch("Trig_TriJetThresh", &TriJetThresh, "Trig_TriJetThresh/I");
+  t_event->Branch("Trig_QuadJetThresh", &QuadJetThresh, "Trig_QuadJetThresh/I");
+  t_event->Branch("Trig_HTThresh", &HTThresh, "Trig_HTThresh/I");
+  t_event->Branch("Trig_BThresh", &BThresh, "Trig_BThresh/I");
+  t_event->Branch("Trig_METThresh", &METThresh, "Trig_METThresh/I");
+
+  // branch title creation
+  eventDoc();
 
 } // end of beginJob
 
@@ -8458,15 +5677,17 @@ NanoAnalyzer::endJob()
 {
   file->cd();
   t_event->Write();
-  
+
+#ifdef charm
   if (!nanoext) return;
 
-  h_trackpt->Write();
+  // write histograms
+  /* h_trackpt->Write();
   h_trackptlow->Write();
+  h_trackptlowfine->Write();
   h_tracketa->Write();
+  h_trackcov00->Write();
   
-  if (!nanoext) return;
-
   h_d0pt->Write();
   h_dstarpt->Write();
   h_PS3pt->Write();
@@ -8478,61 +5699,9 @@ NanoAnalyzer::endJob()
   h_D0masscut->Write();
   h_deltaMassD0Dstar->Write();
   h_D0masscut_rightDLcut->Write();
-  h_deltaMassD0Dstar_rightDLcut->Write();
-
-  // H4lepton
-  h_p_e->Write();
-  h_et_e->Write();
-  h_pt_e_b4->Write();
-  h_eta_e_b4->Write();
-  h_phi_e->Write();
-  h_sc_eta->Write();
-  h_sc_rawE->Write();
-  h_relPFIso_e->Write();
-  h_relPFIso_pt_e->Write();
-  h_dxy_e->Write();
-  h_SIP3d_e_b4->Write();
-  h_misshite->Write();  
+  h_deltaMassD0Dstar_rightDLcut->Write(); */
+#endif
 }
-
-/*  commented!
-//    ------------ method called when starting to processes a run  ------------  Qun   below 
-void NanoAnalyzer::beginRun(edm::Run const& iRun, edm::EventSetup const& iSetup)
-//--------------------------------------------------------------------------
-{
-    using namespace std;
-    using namespace edm;
-  //If the hltConfig can be initialized, then the below is an example of how to extract the config information for the trigger from the so-called provenance.
-  //The trigger configuration can change from run to run (during the run is the same), so it needs to be called here.
-  //"init" return value indicates whether intitialisation has succeeded
-  //"changed" parameter indicates whether the config has actually changed
-    bool changed(true);
- // *** this might be duplicate, investigate ***
-
-    if (hltConfig_.init(iRun,iSetup,processName_,changed)) {
-      if (changed) {
-	if (triggerName_!="@") { // "@" means: analyze all triggers in config
-	  const unsigned int n(hltConfig_.size());
-	  const unsigned int triggerIndex(hltConfig_.triggerIndex(triggerName_));
-	  if (triggerIndex>=n) {
-            cout << "HLTEventAnalyzerAOD::analyze:"
-               << " TriggerName " << triggerName_
-               << " not available in (new) config!" << endl;
-            cout << "Available TriggerNames are: " << endl;
-            hltConfig_.dump("Triggers");
-          }
-            cout << "Available TriggerNames are:QQQQQQ " << endl;
-	}
-      }
-    } else { 
-  cout << "NanoAnalyzer::beginRun: config extraction failure with process name " << processName_<< endl;
-    }
-
-} //NanoAnalyzer::beginRun ends
-// above Qun
-// end of comment 
-*/
-
 
 // ------------ method called once each job just before starting run  ------------
 void NanoAnalyzer::beginRun(const edm::Run &iRun, const edm::EventSetup &iStp)
@@ -8542,11 +5711,11 @@ void NanoAnalyzer::beginRun(const edm::Run &iRun, const edm::EventSetup &iStp)
   //"init" return value indicates whether intitialisation has succeeded
   //"changed" parameter indicates whether the config has actually changed
   bool changed = false;
-  cout << "beginRun" << endl;
+  std::cout << "beginRun" << std::endl;
   //if (!hlt_cfg.init(iRun, iStp, hlt_proc, changed)) {
   if (!hltConfig_.init(iRun, iStp, hlt_proc, changed)) {
     std::cout << "Initialization of HLTConfigProvider failed!!" << std::endl;
-    std::cout << "This is normal on 2010 MC only" << endl;
+    std::cout << "This is normal on 2010 MC only" << std::endl;
     return;
   }
   if (changed) {
@@ -8562,20 +5731,19 @@ void NanoAnalyzer::beginRun(const edm::Run &iRun, const edm::EventSetup &iStp)
     update_HLT_branch();
   }
 
-// Qun, for trigger objects
+// for trigger objects
 	if (triggerName_!="@") { // "@" means: analyze all triggers in config
 	  const unsigned int n(hltConfig_.size());
 	  const unsigned int triggerIndex(hltConfig_.triggerIndex(triggerName_));
 	  if (triggerIndex>=n) {
             std::cout << "HLTEventAnalyzerAOD::analyze:"
                << " TriggerName " << triggerName_
-               << " not available in (new) config!" << endl;
-            std::cout << "Available TriggerNames are: " << endl;
+	       << " not available in (new) config!" << std::endl;
+            std::cout << "Available TriggerNames are: " << std::endl;
             hltConfig_.dump("Triggers");
           }
-            cout << "Available TriggerNames are:QQQQQQ " << endl;
+	  std::cout << "Available TriggerNames are:QQQQQQ " << std::endl;
 	}
-// end Qun
 
   //cout << "hello beginRun end" << endl; 
 }
@@ -8606,7 +5774,7 @@ void NanoAnalyzer::update_HLT_branch()
 }
 
 void NanoAnalyzer::fillDescriptions(edm::ConfigurationDescriptions & descriptions) 
-{
+{ // set defaults for parameters which can be overruled by configuration
   edm::ParameterSetDescription desc;
   desc.add<std::string>("outFile", "test.root");
   desc.add<bool>("isData", true);
@@ -8628,14 +5796,630 @@ void NanoAnalyzer::fillDescriptions(edm::ConfigurationDescriptions & description
 // ------------ method called when ending the processing of a run  ------------  Qun below
 void NanoAnalyzer::endRun(edm::Run const&, edm::EventSetup const&)
 {
+  // for test: (currently saves almost empty file)
+  // t_event->SaveAs("test.json");
 }
-// above Qun
 
+#ifdef charm
 //include JSON quality check
 #include "NanoJSON.cc.forinclude"
+#endif
 
-//include trigger methods
+//include methods for special trigger variables
 #include "NanoTrigger.cc.forinclude"
 
 //define this as a plug-in
 DEFINE_FWK_MODULE(NanoAnalyzer);
+
+// branch title creation
+void NanoAnalyzer::eventDoc() { 
+
+  createTitle("run", "run/i"); 
+  createTitle("event", "event/l"); 
+  createTitle("luminosityBlock", "luminosityBlock/i");  
+  createTitle("CMSSW",                   "CMSSW version used for the processing"); 
+  createTitle("GoodLumisection",         "flag: good lumi section, from Golden JSON (not all datasets)"); 
+  
+  createTitle("Dataset_isMC",            "flag: event is from MC dataset");
+  // flags from trigger-based auto-recognition 
+  createTitle("Dataset_ZeroBias",        "flag: event from ZeroBias dataset"); 
+  createTitle("Dataset_MinimumBias",     "flag: event from MinimumBias dataset"); 
+  createTitle("Dataset_Jet",             "flag: event from Jet dataset"); 
+  createTitle("Dataset_MultiJet",        "flag: event from MultiJet dataset");
+  createTitle("Dataset_JetMETTauMonitor","flag: event from JetMETTauMonitor dataset"); 
+  createTitle("Dataset_Mu",              "flag: event from Mu or SingleMuon dataset");
+  createTitle("Dataset_MuMonitor",       "flag: event from MuMonitor dataset");
+  createTitle("Dataset_DoubleMu",        "flag: event from DoubleMu(Parked) dataset"); 
+  createTitle("Dataset_MuHad",           "flag: event from MuHad dataset"); 
+  createTitle("Dataset_MuOnia",          "flag: event from MuOnia dataset"); 
+  createTitle("Dataset_Charmonium",      "flag: event from Charmonium dataset"); 
+  createTitle("Dataset_BParking",        "flag: event from BParking dataset"); 
+  createTitle("Dataset_BTau",            "flag: event from BTau dataset"); 
+  createTitle("Dataset_Electron",        "flag: event from EG or Electron dataset"); 
+  createTitle("Dataset_DoubleElectron",  "flag: event from DoubleElectron dataset"); 
+  createTitle("Dataset_Photon",          "flag: event from Photon dataset"); 
+  createTitle("Dataset_EGMonitor",       "flag: event from EGMonitor dataset");
+  createTitle("Dataset_METFwd",          "flag: event from METFwd dataset");
+  createTitle("Dataset_MuEG",            "flag: event from MuEG dataset");
+  createTitle("Dataset_Commissioning",   "flag: event from Commissioning dataset");
+  
+  createTitle("Alsoon_ZeroBias",         "flag: event also on ZeroBias dataset"); 
+  createTitle("Alsoon_MinimumBias",      "flag: event also on MinimumBias dataset");
+  createTitle("Alsoon_Jet",              "flag: event also on Jet dataset"); 
+  createTitle("Alsoon_MultiJet",         "flag: event also on MultiJet dataset"); 
+  createTitle("Alsoon_JetMETTauMonitor", "flag: event also on JetMETTauMonitor dataset"); 
+  createTitle("Alsoon_Mu",               "flag: event also on Mu or SingleMuon dataset");
+  createTitle("Alsoon_MuMonitor",        "flag: event also on MuMonitor dataset"); 
+  createTitle("Alsoon_DoubleMu",         "flag: event also on DoubleMu(Parked) dataset");
+  createTitle("Alsoon_MuHad",            "flag: event also on MuHad dataset"); 
+  createTitle("Alsoon_MuOnia",           "flag: event also on MuOnia dataset"); 
+  createTitle("Alsoon_Charmonium",       "flag: event also on Charmonium dataset"); 
+  createTitle("Alsoon_BParking",         "flag: event also on BParking dataset");
+  createTitle("Alsoon_BTau",             "flag: event also on BTau dataset"); 
+  createTitle("Alsoon_Electron",         "flag: event also on EG or Electron dataset"); 
+  createTitle("Alsoon_DoubleElectron",   "flag: event also on DoubleElectron dataset");
+  createTitle("Alsoon_Photon",           "flag: event also on Photon datset");
+  createTitle("Alsoon_EGMonitor",        "flag: event also on EGMonitor dataset");
+  createTitle("Alsoon_MuEG",             "flag: event also on MuEG dataset");
+  createTitle("Alsoon_METFwd",           "flag: event also on METFwd dataset"); 
+  createTitle("Alsoon_Commissioning",    "flag: event also on Commissioning dataset"); 
+
+  if (!isData) {
+    
+  createTitle("nGenPart", "interesting gen particles"); 
+  createTitle("GenPart_pt", "pt"); 
+  createTitle("GenPart_eta", "eta"); 
+  createTitle("GenPart_phi", "phi");
+  createTitle("GenPart_mass", "mass (not for all particles); if 0 when it should not be: look up from PDG");
+  createTitle("GenPart_charge", "charge");
+  createTitle("GenPart_pdgId", "PDG id"); 
+  createTitle("GenPart_status", "Particle status. 1=stable"); 
+  createTitle("GenPart_statusFlags", "gen status flags stored bitwise, bits are: 0 : isPrompt, 1 : isDecayedLeptonHadron, 2 : isTauDecayProduct, 3 : isPromptTauDecayProduct, 4 : isDirectTauDecayProduct, 5 : isDirectPromptTauDecayProduct, 6 : isDirectHadronDecayProduct, 7 : isHardProcess, 8 : fromHardProcess, 9 : isHardProcessTauDecayProduct, 10 : isDirectHardProcessTauDecayProduct, 11 : fromHardProcessBeforeFSR, 12 : isFirstCopy, 13 : isLastCopy, 14 : isLastCopyBeforeFSR, "); 
+  createTitle("GenPart_genPartIdxMother", "index of the mother particle");
+  
+  if (nanoext) {
+      
+  createTitle("GenPart_Id", "unique genparticle identifier for list-independent cross referencing"); 
+  createTitle("GenPart_isNano", "will also be found on official nanoAOD"); 
+  createTitle("GenPart_parpdgId", "pdg id of immediate parent"); 
+  createTitle("GenPart_sparpdgId", "pdg id of remote parent"); 
+  createTitle("GenPart_numberOfDaughters", "number of daughters in decay");
+  createTitle("GenPart_nstchgdaug", "number of stable charged daughters in decay"); 
+  createTitle("GenPart_promptFlag", "GenPart_promptFlag"); 
+  createTitle("GenPart_vx", "x position of decay vertex");
+  createTitle("GenPart_vy", "y position of decay vertex");
+  createTitle("GenPart_vz", "z position of decay vertex");
+  createTitle("GenPart_mvx", "x position of mother origin vertex");
+  createTitle("GenPart_mvy", "y position of mother origin vertex");
+  createTitle("GenPart_mvz", "z position of mother origin vertex");
+  createTitle("GenPart_recIdx", "identifier of associated reconstructed track (-1 if none)"); 
+  
+  createTitle("GenPV_x", "x position of generated main vertex"); 
+  createTitle("GenPV_y", "y position of generated main vertex");
+  createTitle("GenPV_z", "z position of generated main vertex"); 
+  createTitle("GenPV_recIdx", "identifyer of corresponding reconstructed vertex");
+  createTitle("GenPV_chmult", "charged multiplicity at this vertex"); 
+  
+  }
+  
+  }
+  
+  createTitle("nTrk", "number of tracks in input track collection"); 
+  
+  createTitle("nIsoTrack", "isolated tracks after basic selection (((pt>5 && (abs(pdgId) == 11 || abs(pdgId) == 13)) || pt > 10) && (abs(pdgId) < 15 || abs(eta) < 2.5) && abs(dxy) < 0.2 && abs(dz) < 0.1 && ((pfIsolationDR03().chargedHadronIso < 5 && pt < 25) || pfIsolationDR03().chargedHadronIso/pt < 0.2)) and lepton veto"); 
+  
+  createTitle("PV_npvs", "total number of reconstructed primary vertices");
+  createTitle("PV_npvsGood", "number of good reconstructed primary vertices. selection:!isFake && ndof > 4 && abs(z) <= 24 && position.Rho <= 2"); 
+  createTitle("PV_chi2", "main primary vertex reduced chi2");
+  createTitle("PV_ndof", "main primary vertex number of degree of freedom");
+  createTitle("PV_score", "main primary vertex score, i.e. sum pt2 of clustered objects"); 
+  createTitle("PV_x", "main primary vertex position x coordinate"); 
+  createTitle("PV_y", "main primary vertex position y coordinate"); 
+  createTitle("PV_z", "main primary vertex position z coordinate");
+  
+  createTitle("nOtherPV", "other primary vertices"); 
+  createTitle("OtherPV_z", "Z position of other primary vertices, excluding the main PV"); 
+  
+  if (nanoext) {  
+  
+  createTitle("nPVtx", "primary vertices (AOD, with or w/o cuts)");
+  createTitle("PVtx_Id", "unique id of reconstructed primary vertex for list-independent cross-referencing");
+  createTitle("PVtx_isMain", "is the main primary vertex, PV");
+  createTitle("PVtx_isMainSim", "is the main simulated vertex"); 
+  createTitle("PVtx_isGood", "satisfies good vertex cuts"); 
+  createTitle("PVtx_isValid", "PVtx_isValid"); 
+  createTitle("PVtx_isFake", "PVtx_isFake"); 
+  createTitle("PVtx_isTrigUnique", "is the unique Trigger vertex; only set if no other vertices contribute to trigger"); 
+  createTitle("PVtx_isUnbiased", "is unbiased by the main relevant trigger (e.g. inclusive muon trigger on muon dataset)");
+  createTitle("PVtx_ntrk", "number of tracks associated to this vertex (including nonfitted close secondaries)");
+  createTitle("PVtx_ntrkfit", "number of tracks used in the vertex fit");
+  createTitle("PVtx_chi2", "primary vertex reduced chi2");
+  createTitle("PVtx_ndof", "number of degrees of freedom (including weights)");
+  createTitle("PVtx_score", "sum pt2 score"); 
+  createTitle("PVtx_sumPt", "sum pt of all tracks"); 
+  createTitle("PVtx_Rho", "radial distance to beam spot");
+  createTitle("PVtx_x", "x position of vertex");
+  createTitle("PVtx_y", "y position of vertex"); 
+  createTitle("PVtx_z", "z position of vertex");
+  
+  if (covout) {
+      
+  createTitle("PVtx_Covxx", "PVtx_Covxx, covariance matrix of primary vertex"); 
+  createTitle("PVtx_Covyx", "PVtx_Covyx");
+  createTitle("PVtx_Covzx", "PVtx_Covzx");
+  createTitle("PVtx_Covyy", "PVtx_Covyy");
+  createTitle("PVtx_Covzy", "PVtx_Covzy"); 
+  createTitle("PVtx_Covzz", "PVtx_Covzz"); 
+  
+  }
+  
+  createTitle("Bsp_x", "beam spot position x coordinate"); 
+  createTitle("Bsp_y", "beam spot position y coordinate");
+  createTitle("Bsp_z", "beam spot position z coordinate"); 
+  createTitle("Bsp_sigmaz", "beam spot z width");
+  createTitle("Bsp_dxdz", "beam spot x slope"); 
+  createTitle("Bsp_dydz", "beam spot y slope"); 
+  createTitle("Bsp_widthx", "beam spot x width");
+  createTitle("Bsp_widthy", "beam spot y width");
+  
+  }
+  
+  createTitle("nMuon", "(AOD) muons after basic nanoAODplus selection");
+  createTitle("Muon_charge", "electric charge");
+  createTitle("Muon_tightCharge", "Tight charge criterion using pterr/pt of muonBestTrack (0:fail, 2:pass)"); 
+  createTitle("Muon_pt", "pt"); 
+  createTitle("Muon_ptErr", "ptError of the muon track"); 
+  createTitle("Muon_eta", "eta"); 
+  createTitle("Muon_phi", "phi");
+  createTitle("Muon_mass", "mass"); 
+  createTitle("Muon_dxy", "dxy (with sign) wrt first PV, in cm");
+  createTitle("Muon_dxyBest", "dxy (with sign) wrt best PV, in cm");
+  createTitle("Muon_dxyErr", "dxy uncertainty, in cm");
+  createTitle("Muon_dz", "dz (with sign) wrt first PV, in cm"); 
+  createTitle("Muon_dzBest", "dz (with sign) wrt best PV, in cm"); 
+  createTitle("Muon_dzErr", "dz uncertainty, in cm"); 
+  createTitle("Muon_ip3d", "3D impact parameter wrt first PV, in cm");
+  createTitle("Muon_sip3d", "3D impact parameter significance wrt first PV"); 
+  createTitle("Muon_ip3dBest", "3D impact parameter wrt best PV, in cm"); 
+  createTitle("Muon_sip3dBest", "3D impact parameter significance wrt best PV"); 
+  createTitle("Muon_pfRelIso03_all", "PF relative isolation dR=0.3, total (deltaBeta corrections)"); 
+  createTitle("Muon_pfRelIso03_chg", "PF relative isolation dR=0.3, charged component");
+  createTitle("Muon_pfRelIso04_all", "PF relative isolation dR=0.4, total (deltaBeta corrections)"); 
+  createTitle("Muon_pfIsoId", "Muon_pfIsoId");
+  createTitle("Muon_miniPFRelIso_all", "mini PF relative isolation, total (with scaled rho*EA PU corrections)"); 
+  createTitle("Muon_miniPFRelIso_chg", "mini PF relative isolation, charged component"); 
+  createTitle("Muon_jetIdx", "index of the associated jet (-1 if none)");
+  createTitle("Muon_isPFcand", "muon is PF candidate");
+  createTitle("Muon_softId", "soft cut-based ID");
+  createTitle("Muon_mediumId", "cut-based ID, medium WP"); 
+  createTitle("Muon_tightId", "cut-based ID, tight WP"); 
+  createTitle("Muon_highPtId", "high-pT cut-based ID (1 = tracker high pT, 2 = global high pT, which includes tracker high pT)"); 
+  createTitle("Muon_nStations", "number of matched stations with default arbitration (segment & track)");
+  createTitle("Muon_nTrackerLayers", "number of layers in the tracker"); 
+  createTitle("Muon_segmentComp", "muon segment compatibility");
+  createTitle("Muon_cleanmask", "simple cleaning mask with priority to leptons"); 
+  createTitle("Muon_mvaTTH", "TTH MVA lepton ID score"); 
+  createTitle("Muon_pdgId", "PDG code assigned by the event reconstruction (not by MC truth)"); 
+  createTitle("Muon_genPartFlav", "Flavour of genParticle for MC matching to status==1 muons: 1 = prompt muon (including gamma*->mu mu), 15 = muon from prompt tau, 5 = muon from b, 4 = muon from c, 3 = muon from light or unknown, 0 = unmatched"); 
+  createTitle("Muon_genPartIdx", "Index into genParticle list for MC matching to status==1 muons");
+  createTitle("Muon_isGlobal", "muon is global muon"); 
+  createTitle("Muon_isTracker", "muon is tracker muon");
+  
+  if (nanoext) {
+    
+  createTitle("Muon_Id", "Unique identifier of muon, for list-independent cross-referencing"); 
+  createTitle("Muon_x", "x point of closest approach to beam line, in cm"); 
+  createTitle("Muon_y", "y point of closest approach to beam line, in cm"); 
+  createTitle("Muon_z", "z point of closest approach to beam line, in cm"); 
+  createTitle("Muon_gpt", "global muon pt"); 
+  createTitle("Muon_geta", "global muon eta"); 
+  createTitle("Muon_gphi", "global muon phi"); 
+  createTitle("Muon_looseId", "loose cut-based ID"); 
+  createTitle("Muon_softId4", "soft cut-based ID, 2010 version"); 
+  createTitle("Muon_softIdBest", "soft cut-based ID, w.r.t. best PV"); 
+  createTitle("Muon_isNano", "can be found on NanoAOD"); 
+  createTitle("Muon_isMini", "can be found on MiniAOD"); 
+  createTitle("Muon_isGood", "isGood(TMAnyStationTight)"); 
+  createTitle("Muon_isGoodLast", "isGood(TMLastStationTight)"); 
+  createTitle("Muon_isGoodAng", "isGood(TMLastStationAngTight)"); 
+  createTitle("Muon_isArbitrated", "isGood(TrackerMuonArbitrated)"); 
+  createTitle("Muon_isStandAlone", "StandAlone Muon"); 
+  createTitle("Muon_isRPCcand", "RPC Muon"); 
+  createTitle("Muon_nValid", "number of valid tracker hits"); 
+  createTitle("Muon_nPix", "number of valid pixel hits"); 
+  createTitle("Muon_Chi2", "tracker muon chi2/ndof"); 
+  createTitle("Muon_gnValid", "number of valid tracker hits, global muon"); 
+  createTitle("Muon_gnPix", "number of valid pixel hits, global muon"); 
+  createTitle("Muon_gChi2", "global muon chi2/ndof"); 
+  createTitle("Muon_gnValidMu", "Muon_gnValidMu"); 
+  createTitle("Muon_vtxIdx", "index of the associated primary vertex (-1 if none)");
+  createTitle("Muon_vtxFlag", "quality flag for vertex association"); 
+  createTitle("Muon_trkIdx", "index of the associated track (-1 if none)"); 
+  createTitle("Muon_simIdx", "index of the associated gen object (-1 if none)"); 
+  createTitle("Muon_nNano", "number of muons satisfying isNano"); 
+  
+  createTitle("nDimu", "number of dimuons after vertex refit"); 
+  createTitle("Dimu_t1muIdx", "cross reference to unique Id of first muon"); 
+  createTitle("Dimu_t1dxy", "dxy of first muon (needed?)"); 
+  createTitle("Dimu_t1dz", "dz of first muon (needed?)"); 
+  createTitle("Dimu_t2muIdx", "cross reference to unique Id of 2nd muon"); 
+  createTitle("Dimu_t2dxy", "dxy of 2nd muon (needed?)"); 
+  createTitle("Dimu_t2dz", "dz of 2nd muon (needed?)"); 
+  createTitle("Dimu_pt", "dimuon pt after vertex fit"); 
+  createTitle("Dimu_eta", "dimuon eta after vertex fit"); 
+  createTitle("Dimu_phi", "dimuon phi after vertex fit"); 
+  createTitle("Dimu_rap", "dimuon rapidity after vertex fit"); 
+  createTitle("Dimu_mass", "dimuon mass after vertex fit"); 
+  createTitle("Dimu_charge", "dimuon charge"); 
+  createTitle("Dimu_simIdx", "cross reference to parent meson or boson in GenPart"); 
+  createTitle("Dimu_vtxIdx", "cross reference to associated primary vertex"); 
+  createTitle("Dimu_chi2", "dimuon vertex chi2/ndof"); 
+  createTitle("Dimu_dlxy", "dimuon decay length in xy"); 
+  createTitle("Dimu_dlxyErr", "dimuon decay length error in xy"); 
+  createTitle("Dimu_dlxySig", "dimuon decay length significance in xy"); 
+  createTitle("Dimu_cosphixy", "cosine of vertex alignment angle in xy"); 
+  createTitle("Dimu_dl", "dimuon decay length in 3D"); 
+  createTitle("Dimu_dlErr", "dimuon decay length error in 3D"); 
+  createTitle("Dimu_dlSig", "dimuon decay length significance in 3D"); 
+  createTitle("Dimu_cosphi", "cosine of vertex alignment angle in 3D"); 
+  createTitle("Dimu_ptfrac", "transverse momentum fraction w.r.t. total of associated primary vertex"); 
+  createTitle("Dimu_x", "x position of dimuon vertex"); 
+  createTitle("Dimu_y", "y position of dimuon vertex"); 
+  createTitle("Dimu_z", "z position of dimuon vertex"); 
+  
+  if (covout) {    
+      
+  createTitle("Dimu_Covxx", "Dimu_Covxx (covariance matrix of vertex refit)"); 
+  createTitle("Dimu_Covyx", "Dimu_Covyx"); 
+  createTitle("Dimu_Covzx", "Dimu_Covzx"); 
+  createTitle("Dimu_Covyy", "Dimu_Covyy"); 
+  createTitle("Dimu_Covzy", "Dimu_Covzy"); 
+  createTitle("Dimu_Covzz", "Dimu_Covzz"); 
+  
+  }
+  
+  }
+
+/*   createTitle("nElectron", "number of Electrons"); 
+  createTitle("Electron_x", "x point of closest approach to beam line, in cm"); 
+  createTitle("Electron_y", "y point of closest approach to beam line, in cm"); 
+  createTitle("Electron_z", "z point of closest approach to beam line, in cm"); 
+  createTitle("Electron_pt", "pt");
+  createTitle("Electron_eta", "eta"); 
+  createTitle("Electron_phi", "phi");
+  createTitle("Electron_mass", "mass");
+  createTitle("Electron_charge", "electric charge");
+  createTitle("Electron_tightCharge", "tight charge criteria"); 
+  createTitle("Electron_pfRelIso03_all", "PF relative isolation dR=0.3"); 
+  createTitle("Electron_pfRelIso03_chg", "PF relative isolation dR=0.3, charged component"); 
+  createTitle("Electron_dr03TkSumPtOld", "old: Non-PF track isolation within a delta R cone of 0.3"); 
+  createTitle("Electron_dr03TkSumPt", "Non-PF track isolation within a delta R cone of 0.3 with electron pt > 35 GeV"); 
+  createTitle("Electron_dr03EcalRecHitSumEtOld", "Non-PF Ecal isolation within a delta R cone of 0.3"); 
+  createTitle("Electron_dr03EcalRecHitSumEt", "Non-PF Ecal isolation within a delta R cone of 0.3 with electron pt > 35 GeV"); 
+  createTitle("Electron_dr03HcalTowerSumEt", "NanoAODplus extension"); 
+  createTitle("Electron_dr03HcalDepth1TowerSumEtOld", "Non-PF Hcal isolation within a delta R cone of 0.3"); 
+  createTitle("Electron_dr03HcalDepth1TowerSumEt", "Non-PF Hcal isolation within a delta R cone of 0.3 with electron pt > 35 GeV"); 
+  createTitle("Electron_isEB", "NanoAODplus extension"); 
+  createTitle("Electron_isEE", "NanoAODplus extension"); 
+  createTitle("Electron_lostHits", "NanoAODplus extension"); 
+  createTitle("Electron_isPFcand", "NanoAODplus extension"); 
+  createTitle("Electron_isNano", "NanoAODplus extension"); 
+  createTitle("Electron_convDist", "NanoAODplus extension"); 
+  createTitle("Electron_convDcot", "NanoAODplus extension"); 
+  createTitle("Electron_convVetoOld", "pass conversion veto");
+  createTitle("Electron_convVeto", "pass conversion veto"); 
+  createTitle("Electron_deltaEtaSC", "delta eta (SC,ele) with sign"); 
+  createTitle("Electron_deltaPhiSC", "delta phi (SC,ele) with sign"); 
+  createTitle("Electron_deltaEtaSCtr", "NanoAODplus extension"); 
+  createTitle("Electron_deltaPhiSCtr", "NanoAODplus extension"); 
+  createTitle("Electron_hoe", "H over E");
+  createTitle("Electron_sieie", "sigma_IetaIeta of the supercluster, calculated with full 5x5 region");
+  createTitle("Electron_sieieR1", "NanoAODplus Run1"); 
+  createTitle("Electron_eInvMinusPInvOld", "NanoAODplus Run1"); 
+  createTitle("Electron_eInvMinusPInv", "1/E_SC - 1/p_trk"); 
+  createTitle("Electron_SCeta", "Super Cluster eta");
+  createTitle("Electron_cutBased", "cut-based ID Fall17 V2 (0:fail, 1:veto, 2:loose, 3:medium, 4:tight)"); 
+  createTitle("Electron_dxy", "dxy (with sign) wrt first PV, in cm"); 
+  createTitle("Electron_dxyErr", "dxy uncertainty, in cm"); 
+  createTitle("Electron_dz", "dz (with sign) wrt first PV, in cm"); 
+  createTitle("Electron_dzErr", "dz uncertainty, in cm"); 
+  createTitle("Electron_ip3d", "3D impact parameter wrt first PV, in cm");
+  createTitle("Electron_sip3d", "3D impact parameter significance wrt first PV, in cm");
+  createTitle("Electron_nNano", "electron that follows nanoAOD cut (pT < 5 GeV)"); 
+  createTitle("Electron_vtxIdx", "index of the associated primary vertex (-1 if none)");
+ 
+  createTitle("nTau", "Taus after basic selection (pt > 18 && tauID('decayModeFindingNewDMs') && (tauID('byLooseCombinedIsolationDeltaBetaCorr3Hits') || tauID('byVLooseIsolationMVArun2v1DBoldDMwLT2015') || tauID('byVLooseIsolationMVArun2v1DBnewDMwLT') || tauID('byVLooseIsolationMVArun2v1DBdR03oldDMwLT') || tauID('byVVLooseIsolationMVArun2v1DBoldDMwLT') || tauID('byVVLooseIsolationMVArun2v1DBoldDMwLT2017v2') || tauID('byVVLooseIsolationMVArun2v1DBnewDMwLT2017v2') || tauID('byVVLooseIsolationMVArun2v1DBdR03oldDMwLT2017v2')))"); 
+  createTitle("Tau_pt", "pt"); 
+  createTitle("Tau_eta", "eta"); 
+  createTitle("Tau_phi", "phi"); 
+  createTitle("Tau_mass", "mass"); 
+  createTitle("Tau_charge", "electric charge"); 
+  createTitle("Tau_decayMode", "decayMode()"); 
+  createTitle("Tau_chargedIso", "charged isolation"); 
+  createTitle("Tau_neutralIso", "neutral (photon) isolation"); 
+  
+  createTitle("nPhoton", "Photons after basic selection (pt > 5 )"); 
+  createTitle("Photon_pt", "pt"); 
+  createTitle("Photon_eta", "eta"); 
+  createTitle("Photon_phi", "phi"); 
+  createTitle("Photon_mass", "mass"); 
+  createTitle("Photon_charge", "electric charge"); 
+  createTitle("Photon_pfRelIso03_all", "PF relative isolation dR=0.3, total (with rho*EA PU corrections)"); 
+  
+  createTitle("MET_pt", "pt"); 
+  createTitle("MET_phi", "phi"); 
+  createTitle("MET_sumEt", "scalar sum of Et"); 
+  createTitle("MET_significance", "MET significance"); 
+  createTitle("MET_covXX", "xx element of met covariance matrix"); 
+  createTitle("MET_covXY", "xy element of met covariance matrix"); 
+  createTitle("MET_covYY", "yy element of met covariance matrix"); 
+  
+  createTitle("CaloMET_pt", "pt"); 
+  createTitle("CaloMET_phi", "phi"); 
+  createTitle("CaloMET_sumEt", "scalar sum of Et"); 
+  
+  createTitle("nJet", "PFJets, ak5 for Run 1, ak4 for Run2, after basic selection (pt > 15)"); 
+  createTitle("Jet_pt", "pt with JEC applied"); 
+  createTitle("Jet_ptuncor", "pt before application of JEC"); 
+  createTitle("Jet_eta", "eta"); 
+  createTitle("Jet_phi", "phi"); 
+  createTitle("Jet_mass", "mass"); 
+  createTitle("Jet_area", "jet catchment area, for JECs"); 
+  createTitle("Jet_nConstituents", "number of particles in the jet"); 
+  createTitle("Jet_nElectrons", "number of electrons in the jet"); 
+  createTitle("Jet_nMuons", "number of muons in the jet"); 
+  createTitle("Jet_chEmEF", "charged Electromagnetic Energy Fraction"); 
+  createTitle("Jet_chHEF", "charged Hadron Energy Fraction"); 
+  createTitle("Jet_neEmEF", "neutral Electromagnetic Energy Fraction"); 
+  createTitle("Jet_neHEF", "neutral Hadron Energy Fraction"); 
+  createTitle("Jet_jetId", "Jet ID flags bit1 is loose (does not always exist), bit2 is tight, bit3 is tightLepVeto"); 
+  
+  if (!isData) {
+   
+  createTitle("nGenJet", "GenJets, i.e. ak5 or ak4 Jets made with visible genparticles"); 
+  createTitle("GenJet_pt", "pt"); 
+  createTitle("GenJet_eta", "eta"); 
+  createTitle("GenJet_phi", "phi"); 
+  createTitle("GenJet_mass", "mass"); 
+  
+  }
+  
+  createTitle("nFatJet", "ak7 (Run 1) or ak8 (Run 2) PFjets for wide jet or boosted analysis"); 
+  createTitle("FatJet_pt", "pt"); 
+  createTitle("FatJet_eta", "eta"); 
+  createTitle("FatJet_phi", "phi"); 
+  createTitle("FatJet_mass", "mass"); 
+  createTitle("FatJet_area", "jet catchment area, for JECs"); 
+  createTitle("FatJet_nConstituents", "number of PF constituents"); 
+  createTitle("FatJet_nElectrons", "number of Electrons in jet"); 
+  createTitle("FatJet_nMuons", "number of Muons in jet"); 
+  createTitle("FatJet_chEmEF", "FatJet_chEmEF"); 
+  createTitle("FatJet_chHEF", "FatJet_chHEF"); 
+  createTitle("FatJet_neEmEF", "FatJet_neEmEF"); 
+  createTitle("FatJet_neHEF", "FatJet_neHEF"); 
+  
+  createTitle("nTrackJet", "ak5 (Run 1) or ak4 (Run 2) track jets"); 
+  createTitle("TrackJet_pt", "pt"); 
+  createTitle("TrackJet_eta", "eta"); 
+  createTitle("TrackJet_phi", "phi"); 
+  createTitle("TrackJet_mass", "mass"); 
+  createTitle("TrackJet_area", "area"); 
+  createTitle("TrackJet_nConstituents", "number of track constituents"); 
+  createTitle("TrackJet_nElectrons", "number of Electrons in jet"); 
+  createTitle("TrackJet_nMuons", "number of Muons in jet");  */
+  
+  createTitle("nTrigObj", "trigger objects, only partially filled so far"); 
+  createTitle("TrigObj_id", "ID of the object: 11 = Electron (PixelMatched e/gamma), 22 = Photon (PixelMatch-vetoed e/gamma), 13 = Muon, 15 = Tau, 1 = Jet, 6 = FatJet, 2 = MET, 3 = HT, 4 = MHT"); 
+  createTitle("TrigObj_filterBits", "extra bits of associated information: 1 = CaloIdL_TrackIdL_IsoVL, 2 = 1e (WPTight), 4 = 1e (WPLoose), 8 = OverlapFilter PFTau, 16 = 2e, 32 = 1e-1mu, 64 = 1e-1tau, 128 = 3e, 256 = 2e-1mu, 512 = 1e-2mu for Electron (PixelMatched e/gamma); 1 = TrkIsoVVL, 2 = Iso, 4 = OverlapFilter PFTau, 8 = 1mu, 16 = 2mu, 32 = 1mu-1e, 64 = 1mu-1tau, 128 = 3mu, 256 = 2mu-1e, 512 =1mu-2e for Muon; 1 = LooseChargedIso, 2 = MediumChargedIso, 4 = TightChargedIso, 8 = TightID OOSC photons, 16 = HPS, 32 = single-tau + tau+MET, 64 = di-tau, 128 = e-tau, 256 = mu-tau, 512 = VBF+di-tau for Tau; 1 = VBF cross-cleaned from loose iso PFTau for Jet; "); 
+  createTitle("TrigObj_pt", "pt"); 
+  createTitle("TrigObj_phi", "phi"); 
+  createTitle("TrigObj_eta", "eta"); 
+  
+  createTitle("Trig_goodMinBiasTrigger", "generic flag: event trigger suited for Minimum Bias analysis"); 
+  createTitle("Trig_goodJetTrigger",     "generic flag: event trigger suited for inclusive Jet analysis"); 
+  createTitle("Trig_goodMuTrigger",      "generic flag: event trigger suited for inclusive Muon analysis"); 
+  createTitle("Trig_goodETrigger",       "generic flag: event trigger suited for inclusive Electron analysis"); 
+  createTitle("Trig_ZeroBiasFlag",       "flag for kind of ZeroBias trigger"); 
+  createTitle("Trig_MinBiasFlag",        "flag for kind of MinimumBias irigger"); 
+  createTitle("Trig_MinBiasMult",        "flag for multiplicity in Minimum Bias Multiplicity triggers"); 
+  createTitle("Trig_MuThresh",           "muon trigger pt threshold"); 
+  createTitle("Trig_MuL1Thresh",         "L1 muon trigger pt threshold"); 
+  createTitle("Trig_MuL2Thresh",         "L2 muon trigger pt threshold"); 
+  createTitle("Trig_IsoMuThresh",        "isolated muon trigger pt threshold"); 
+  createTitle("Trig_DoubleMuThresh",     "double muon trigger, lower pt threshold"); 
+  createTitle("Trig_JpsiThresh",         "Jpsi trigger, Jpsi pt threshold"); 
+  createTitle("Trig_MuHadFlag",          "flag for kind of Muon+Hadron trigger"); 
+  createTitle("Trig_MuEGFlag",           "flag for kind of Muon+Electron or Photon trigger"); 
+  createTitle("Trig_ElectronThresh",     "electron trigger pt threshold"); 
+  createTitle("Trig_DoubleElectronThresh","double electron trigger lower pt threshold"); 
+  createTitle("Trig_PhotonThresh",       "photon trigger pt threshold"); 
+  createTitle("Trig_JetThresh",          "jet trigger Et threshold"); 
+  createTitle("Trig_DiJetThresh",        "diJet trigger Et threshold"); 
+  createTitle("Trig_TriJetThresh",       "triJet trigger Et threshold"); 
+  createTitle("Trig_QuadJetThresh",      "four-Jet trigger Et threshold"); 
+  createTitle("Trig_HTThresh",           "HT trigger HT threshold"); 
+  createTitle("Trig_BThresh",            "threshold of B trigger object"); 
+  createTitle("Trig_METThresh",          "MET trigger threshold"); 
+
+#ifdef charm
+  if (covout) {
+
+  createTitle("D0_Covxx", "D0_Covxx, covariance matrix of D0 vertex"); 
+  createTitle("D0_Covyx", "D0_Covyx"); 
+  createTitle("D0_Covyy", "D0_Covyy"); 
+  createTitle("D0_Covzx", "D0_Covzx"); 
+  createTitle("D0_Covzy", "D0_Covzy"); 
+  createTitle("D0_Covzz", "D0_Covzz");           
+ 
+  }
+
+  createTitle("D0_DstarIdx", "cross reference to D* this D0 is part of, if any"); 
+  createTitle("D0_ambiPrim", "flag: primary vertex association is ambigous"); 
+  createTitle("D0_chi2", "chi2/ndof of D0 vertex fit");   
+  createTitle("D0_cosphi", "D0 cosine of vertex alignment angle in 3D"); 
+  createTitle("D0_cosphixy", "D0 cosine of vertex alignment angle in xy"); 
+  createTitle("D0_dl", "D0 decay length in 3D"); 
+  createTitle("D0_dlErr", "D0 decay length error in 3D"); 
+  createTitle("D0_dlSig", "D0 decay length significance in 3D"); 
+  createTitle("D0_dlxy", "D0 decay length in xy"); 
+  createTitle("D0_dlxyErr", "D0 decay length error in xy"); 
+  createTitle("D0_dlxySig", "D0 decay length significance in xy"); 
+  createTitle("D0_eta", "D0 eta"); 
+  createTitle("D0_hasMuon", "flag: one of decay 'hadrons' is identified as muon"); 
+  createTitle("D0_mass12", "D0 mass, first track is K"); 
+  createTitle("D0_mass21", "D0 mass, 2nd track is K"); 
+  createTitle("D0_massKK", "D0 mass, both tracks are K"); 
+  createTitle("D0_phi", "D0 phi"); 
+  createTitle("D0_promptFlag", "1=prompt, 0=nonprompt, -1= unknown"); 
+  createTitle("D0_pt", "D0 pt"); 
+  createTitle("D0_ptfrac", "transverse momentum fraction of D0 w.r.t. total of associated primary vertex, excluding muons"); 
+  createTitle("D0_ptfrac04", "transverse momentum fraction of D0 w.r.t. cone of DeltaR=0.4, excluding muons"); 
+  createTitle("D0_ptfrac07", "transverse momentum fraction of D0 w.r.t. cone of DeltaR=0.7, excluding muons"); 
+  createTitle("D0_ptfrac10", "transverse momentum fraction of D0 w.r.t. cone of DeltaR=1.0, excluding muons"); 
+  createTitle("D0_ptfrac15", "transverse momentum fraction of D0 w.r.t. cone of DeltaR=1.5, excluding muons"); 
+  createTitle("D0_rap", "D0 rapidity"); 
+  createTitle("D0_simIdx", "cross reference to D0 in GenPart (loose matching), -1 if not matched"); 
+  createTitle("D0_t1Kprob", "Kaon probability of first D0 decay track (from dEdx)"); 
+  createTitle("D0_t1chg", "charge of first D0 decay track"); 
+  createTitle("D0_t1chindof", "chi2/ndof of first track"); 
+  createTitle("D0_t1dEdxnmeas", "number of measured dEdx hits, first track"); 
+  createTitle("D0_t1dEdxnsat", "number of saturated dEdx hits, first track"); 
+  createTitle("D0_t1dxy", "dxy of first track from D0"); 
+  createTitle("D0_t1dz", "dz of first track from D0"); 
+  createTitle("D0_t1eta", "eta of first D0 decay track"); 
+  createTitle("D0_t1isHighPurity", "flag: first track satisfies high purity criteria"); 
+  createTitle("D0_t1muIdx", "muon index of firts track, if any"); 
+  createTitle("D0_t1nPix", "number of pixel hits of first track"); 
+  createTitle("D0_t1nValid", "number of valid hits of firat track"); 
+  createTitle("D0_t1pdgId", "pdgId of first track"); 
+  createTitle("D0_t1phi", "phi of first D0 decay track"); 
+  createTitle("D0_t1piprob", "pion probability of first D0 decay track (from dEdx)"); 
+  createTitle("D0_t1pt", "pt of first D0 decay track"); 
+  createTitle("D0_t1tkIdx", "track unique Id of firts D0 deacy track"); 
+  createTitle("D0_t1vtxIdx", "Id of vertex to which firts D0 decay track was originally associated"); 
+  createTitle("D0_t2Kprob", "Kaon probability of 2nd D0 deacy track (from dEdx)"); 
+  createTitle("D0_t2chg", "charge of 2nd D0 decay track"); 
+  createTitle("D0_t2chindof", "chi2/ndof of 2nd track"); 
+  createTitle("D0_t2dEdxnmeas", "numbre of measured dEdx hits, 2nd track"); 
+  createTitle("D0_t2dEdxnsat", "number of saturated dEdx hits, 2nd track"); 
+  createTitle("D0_t2dxy", "dxy of 2nd D0 decay track"); 
+  createTitle("D0_t2dz", "dz of 2nd D0 decay track"); 
+  createTitle("D0_t2eta", "eta of 2nd D0 decay track"); 
+  createTitle("D0_t2isHighPurity", "flag: 2nd track satisfies high purity criteria"); 
+  createTitle("D0_t2muIdx", "muon index of 2nd track, if any"); 
+  createTitle("D0_t2nPix", "number of pixel hits of 2nd track"); 
+  createTitle("D0_t2nValid", "number of valid hits of 2nd track"); 
+  createTitle("D0_t2pdgId", "pdgId of 2nd track"); 
+  createTitle("D0_t2phi", "phi of 2nd D0 decay track"); 
+  createTitle("D0_t2piprob", "pion probability of 2nd D0 decay track (from dEdx)"); 
+  createTitle("D0_t2pt", "pt of 2nd D0 deacy track"); 
+  createTitle("D0_t2tkIdx", "pttrack unique Id of 2nd D0 deacy track"); 
+  createTitle("D0_t2vtxIdx", "Id of vertex to which 2nd D0 deacy track was originally associated"); 
+  createTitle("D0_vtxIdx", "cross reference to associated primary vertex"); 
+  createTitle("D0_x", "x position of D0 vertex"); 
+  createTitle("D0_y", "y position of D0 vertex"); 
+  createTitle("D0_z", "z position of D0 vertex"); 
+  createTitle("nD0", "reconstructed D0 candidates"); 
+  
+  createTitle("Dstar_D0ambiPrim", "flag: primary vertex association is ambigous"); 
+  createTitle("Dstar_D0chi2", "chi2/ndof of D0 vertex fit"); 
+  createTitle("Dstar_D0cosphi", "D0 from D*, cosine of vertex alignment angle in 3D"); 
+  createTitle("Dstar_D0cosphixy", "D0 from D*, cosine of vertex alignment angle in xy"); 
+  createTitle("Dstar_D0dl", "D0 from D*, decay length in 3D"); 
+  createTitle("Dstar_D0dlErr", "D0 from D*, decay length error in 3D"); 
+  createTitle("Dstar_D0dlSig", "D0 from D*, decay length significance in 3D"); 
+  createTitle("Dstar_D0dlxy", "D0 from D*, decay length in xy"); 
+  createTitle("Dstar_D0dlxyErr", "D0 from D*, decay length error in xy"); 
+  createTitle("Dstar_D0dlxySig", "D0 from D*, decay length significance in xy"); 
+  createTitle("Dstar_D0eta", "eta of D0 from D*"); 
+  createTitle("Dstar_D0mass", "mass of D0 from D*"); 
+  createTitle("Dstar_D0massKK", "mass for D0->KK hypothesis"); 
+  createTitle("Dstar_D0phi", "phi of D0 from D*"); 
+  createTitle("Dstar_D0promptFlag", "1=prompt, 0=nonprompt, -1= unknown"); 
+  createTitle("Dstar_D0pt", "pt of D0 from D*"); 
+  createTitle("Dstar_D0ptfrac", "transverse momentum fraction of D* w.r.t. total of associated primary vertex, excluding muons"); 
+  createTitle("Dstar_D0ptfrac04", "transverse momentum fraction of D* w.r.t. cone of DeltaR=0.4, excluding muons"); 
+  createTitle("Dstar_D0ptfrac07", "transverse momentum fraction of D* w.r.t. cone of DeltaR=0.7, excluding muons"); 
+  createTitle("Dstar_D0ptfrac10", "transverse momentum fraction of D* w.r.t. cone of DeltaR=1.0, excluding muons"); 
+  createTitle("Dstar_D0ptfrac15", "transverse momentum fraction of D* w.r.t. cone of DeltaR=1.5, excluding muons"); 
+  createTitle("Dstar_D0recIdx", "cross reference to associated primary vertex"); 
+  createTitle("Dstar_D0simIdx", "cross reference to D0 in GenPart (loose matching), -1 if not matched"); 
+  createTitle("Dstar_D0x", "x position of D0 (from D*) vertex"); 
+  createTitle("Dstar_D0y", "y position of D0 (from D*) vertex"); 
+  createTitle("Dstar_D0z", "z position of D0 (from D*) vertex"); 
+  createTitle("Dstar_KKprob", "Kaon probability of K from D0 from D* (from dEdx)"); 
+  createTitle("Dstar_Kchg", "charge of K from D0 from D*"); 
+  createTitle("Dstar_Kchindof", "chi2/ndof of K track"); 
+  createTitle("Dstar_KdEdxnmeas", "number of measured dEdx hits, K track"); 
+  createTitle("Dstar_KdEdxnsat", "number of saturated dEdx hits, K track"); 
+  createTitle("Dstar_Kdxy", "dxy of K from D0 from D*"); 
+  createTitle("Dstar_Kdz", "dz of K from D0 from D*"); 
+  createTitle("Dstar_Keta", "eta of K from D0 from D*"); 
+  createTitle("Dstar_KisHighPurity", "flag: K track satisfies high purity criteria"); 
+  createTitle("Dstar_KmuIdx", "index to muon, K track"); 
+  createTitle("Dstar_KnPix", "number of pixel hits of K track"); 
+  createTitle("Dstar_KnValid", "number of valid hits of K track"); 
+  createTitle("Dstar_Kphi", "phi of K from D0 from D*"); 
+  createTitle("Dstar_Kpiprob", "pion probability of K from D0 from D* (from dEdx)"); 
+  createTitle("Dstar_Kpt", "pt of K from D0 from D*"); 
+  createTitle("Dstar_KtkIdx", "track unique Id of K from D0 from D*"); 
+  createTitle("Dstar_KvtxIdx", "Id of vertex to which K from D0 from D* was originally associated"); 
+  createTitle("Dstar_deltam", "D*-D0 mass difference (add D0 mass for D* mass)"); 
+  createTitle("Dstar_deltamKK", "deltam for D0->KK hypothesis"); 
+  createTitle("Dstar_deltamr", "D*-D0 mass difference with slow pion refit"); 
+  createTitle("Dstar_deltamrKK", "refitted deltam for D0->KK hypothesis"); 
+  createTitle("Dstar_eta", "D* eta"); 
+  createTitle("Dstar_hasMuon", "flag: one of decay 'hadrons' is identified as muon"); 
+  createTitle("Dstar_phi", "D* phi"); 
+  createTitle("Dstar_piKprob", "Kaon probability of pi from D0 from D* (from dEdx)"); 
+  createTitle("Dstar_pichg", "charge of pi from D0 from D*"); 
+  createTitle("Dstar_pichindof", "chi2/ndof of pi track"); 
+  createTitle("Dstar_pidEdxnmeas", "number of measured dEdx hits"); 
+  createTitle("Dstar_pidEdxnsat", "number of saturated dEdx hits"); 
+  createTitle("Dstar_pidxy", "dxy of pi from D0 from D*"); 
+  createTitle("Dstar_pidz", "dz of pi from D0 from D*"); 
+  createTitle("Dstar_pieta", "eta of pi from D0 from D*"); 
+  createTitle("Dstar_piisHighPurity", "flag: pi track satisfies high purity criteria"); 
+  createTitle("Dstar_pimuIdx", "muon index for pi track"); 
+  createTitle("Dstar_pinPix", "number of pixel hits of pi track"); 
+  createTitle("Dstar_pinValid", "number of valid hits of pi track"); 
+  createTitle("Dstar_piphi", "phi of pi from D0 from D*"); 
+  createTitle("Dstar_pipiprob", "pion probability of pi from D0 from D* (from dEdx)"); 
+  createTitle("Dstar_pipt", "pt of pi from D0 from D*"); 
+  createTitle("Dstar_pitkIdx", "track unique Id of pi from D0 from D*"); 
+  createTitle("Dstar_pivtxIdx", "Id of vertex to which pi from D0 from D* was originally associated"); 
+  createTitle("Dstar_pisKprob", "Kaon probability of pis from D* (from dEdx)"); 
+  createTitle("Dstar_pischg", "charge of pis from D*"); 
+  createTitle("Dstar_pischindof", "chi2/ndof of pis track"); 
+  createTitle("Dstar_pischir", "chi2/ndof of pis track"); 
+  createTitle("Dstar_pisdEdxnmeas", "number of measured dEdx hits, pis"); 
+  createTitle("Dstar_pisdEdxnsat", "number of saturated dEdx hits, pis"); 
+  createTitle("Dstar_pisdxy", "dxy of pis from D*"); 
+  createTitle("Dstar_pisdz", "dz of pis from D*"); 
+  createTitle("Dstar_piseta", "eta of pis from D*"); 
+  createTitle("Dstar_pisetar", "eta of pis from D*"); 
+  createTitle("Dstar_pisisHighPurity", "pis is high purity track"); 
+  createTitle("Dstar_pismuIdx", "index to muon, if any"); 
+  createTitle("Dstar_pisnPix", "number of pixel hits of pis track"); 
+  createTitle("Dstar_pisnValid", "number of valid hits of pis track"); 
+  createTitle("Dstar_pisphi", "phi of pis from D*"); 
+  createTitle("Dstar_pisphir", "phi of pis from D*"); 
+  createTitle("Dstar_pispiprob", "pion probability of pis from D* (from dEdx)"); 
+  createTitle("Dstar_pispt", "pt of pis from D*"); 
+  createTitle("Dstar_pisptr", "pt of pis from D*"); 
+  createTitle("Dstar_pistkIdx", "track unique Id of pis from D*"); 
+  createTitle("Dstar_pisvtxIdx", "Id of vertex to which pis from D* was originally associated"); 
+  createTitle("Dstar_promptFlag", "1=prompt, 0=nonprompt, -1= unknown"); 
+  createTitle("Dstar_pt", "D* pt"); 
+  createTitle("Dstar_ptfrac", "transverse momentum fraction of D* w.r.t. total of associated primary vertex"); 
+  createTitle("Dstar_rap", "D* rapidity"); 
+  createTitle("Dstar_simIdx", "cross reference to D* in GenPart (loose matching), -1 if not matched"); 
+  createTitle("Dstar_vtxIdx", "cross reference to associated primary vertex"); 
+  createTitle("nDstar", "D* -> K pi pis candidates"); 
+#endif
+
+}
+
+void NanoAnalyzer::createTitle(const std::string &name, const std::string &title) { 
+ TBranch *branch = t_event->GetBranch(name.c_str()); branch->SetTitle(title.c_str());
+} 

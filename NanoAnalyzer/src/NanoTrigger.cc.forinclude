@@ -231,6 +231,7 @@ bool NanoAnalyzer::providesGoodMinBiasTrigger(const edm::Event& iEvent) {
 		    else if (trigNames.triggerName(i)=="HLT_StoppedHSCP")      {if (MinBiasMult<-19) MinBiasMult=-19;}
                     //
                     // with cuts on (in time) ECAL clusters, don't use if unique (NoBPTX means no beam)
+                    // before activation, beware of overlap with other samples! 
 		    // else if (trigNames.triggerName(i)=="HLT_L1SingleEG1")                  {if (MinBiasMult<-3) MinBiasMult=-3;}
 		    // else if (trigNames.triggerName(i)=="HLT_L1SingleEG1_NoBPTX")           {MinBiasMult=-11;}
 		    // else if (trigNames.triggerName(i)=="HLT_L1SingleEG2_NoBPTX")           {MinBiasMult=-12;}
@@ -1688,8 +1689,9 @@ bool NanoAnalyzer::providesGoodMuTrigger(const edm::Event& iEvent) {
                     else if (iEvent.run()>138559 && trigNames.triggerName(i)=="HLT_L2Mu0") {MuL2Thresh=0; MuThresh=1;} // also on Mu for Run A1
                     else if (iEvent.run()>141949 && trigNames.triggerName(i)=="HLT_Mu5_L1MuOpen") {if (DoubleMuThresh<0||DoubleMuThresh>6) DoubleMuThresh=6;} // Run A2 
                     else if (iEvent.run()>141949 && trigNames.triggerName(i)=="HLT_Mu3_L1MuOpen") {if (DoubleMuThresh<0||DoubleMuThresh>4) DoubleMuThresh=4;}
-                    else if (iEvent.run()>141949 && trigNames.triggerName(i)=="HLT_Mu0_L1MuOpen")    DoubleMuThresh=0;  
-                    // else if (trigNames.triggerName(i)=="HLT_Mu0_L2Mu0")       DoubleMuThresh=0;     
+                    else if (iEvent.run()>141949 && trigNames.triggerName(i)=="HLT_Mu0_L1MuOpen")    DoubleMuThresh=0;
+                    // always seems to occur together with HLT_L2DoubleMu0, but might trigger selection for MuMonitor in addition to Muonia 
+                    else if (iEvent.run()>141949 && trigNames.triggerName(i)=="HLT_Mu0_L2Mu0")       DoubleMuThresh=0;     
                     else if (iEvent.run()>145000 && trigNames.triggerName(i)=="HLT_L2DoubleMu0")     DoubleMuThresh=0; // not in list,  moved from MuOnia for Run 2010B
                     else if (iEvent.run()>145000 && trigNames.triggerName(i)=="HLT_DoubleMu0")       DoubleMuThresh=0; // not in list,  duplicating MuOnia   
                     else if (iEvent.run()>141949 && trigNames.triggerName(i)=="HLT_L1DoubleMuOpen")  DoubleMuThresh=0; // on Mu for Run A1
@@ -1943,11 +1945,60 @@ bool NanoAnalyzer::providesGoodETrigger(const edm::Event& iEvent) {
                     //else if (trigNames.triggerName(i)=="HLT_Ele12_SW_TighterEleIdIsol_L1R") {if (ElectronThresh<0 || ElectronThresh>12) ElectronThresh=12;}
                     else if (trigNames.triggerName(i)=="HLT_Ele12_SW_TighterEleIdIsol_L1R_v1") {if (ElectronThresh<0 || ElectronThresh>12) ElectronThresh=12;}
                     else if (trigNames.triggerName(i)=="HLT_Ele12_SW_TighterEleIdIsol_L1R_v3") {if (ElectronThresh<0 || ElectronThresh>12) ElectronThresh=12;}
+                    // 2010 Run A
+                    else if (trigNames.triggerName(i)=="HLT_Ele25_SW_L1R") {if (ElectronThresh<0 || ElectronThresh>25) ElectronThresh=25;}
+                    else if (trigNames.triggerName(i)=="HLT_Ele20_LW_L1R") {if (ElectronThresh<0 || ElectronThresh>20) ElectronThresh=20;}
+                    else if (trigNames.triggerName(i)=="HLT_Ele20_SW_L1R") {if (ElectronThresh<0 || ElectronThresh>20) ElectronThresh=20;}
+                    else if (run<141956 && trigNames.triggerName(i)=="HLT_Ele15_LW_L1R") {if (ElectronThresh<0 || ElectronThresh>15) ElectronThresh=15;}
+                    else if (run<141956 && trigNames.triggerName(i)=="HLT_Ele15_SiStrip_L1R"){if (ElectronThresh<0 || ElectronThresh>15) ElectronThresh=15;}
+                    else if (trigNames.triggerName(i)=="HLT_Ele15_SW_L1R"){if (ElectronThresh<0 || ElectronThresh>15) ElectronThresh=15;}
+                    else if (trigNames.triggerName(i)=="HLT_Ele15_SW_EleId_L1R"){if (ElectronThresh<0 || ElectronThresh>15) ElectronThresh=15;}
+                    else if (trigNames.triggerName(i)=="HLT_Ele15_SW_CaloEleId_L1R"){if (ElectronThresh<0 || ElectronThresh>15) ElectronThresh=15;}
+                    else if (trigNames.triggerName(i)=="HLT_Ele10_LW_L1R") {if (ElectronThresh<0 || ElectronThresh>10) ElectronThresh=10;}
+                    else if (trigNames.triggerName(i)=="HLT_Ele10_LW_EleId_L1R") {if (ElectronThresh<0 || ElectronThresh>10) ElectronThresh=10;}
+                    else if (run<144200 && trigNames.triggerName(i)=="HLT_Ele10_SW_EleId_L1R"){if (ElectronThresh<0 || ElectronThresh>10) ElectronThresh=10;}
+
+                    // partially documented for both EG and EGMonitor simultanously?? (runs 144000-144200)
+                    else if (run<144200 && trigNames.triggerName(i)=="HLT_Ele10_SW_L1R"){if (ElectronThresh<0 || ElectronThresh>10) ElectronThresh=10;}
+                    // add restriction to Run A runs for photon triggers?
+                    else if (trigNames.triggerName(i)=="HLT_Photon50_L1R"){if (PhotonThresh<0 || PhotonThresh>50) PhotonThresh=50;}
+                    else if (trigNames.triggerName(i)=="HLT_Photon50_Cleaned_L1R"){if (PhotonThresh<0 || PhotonThresh>50) PhotonThresh=50;}
+                    else if (trigNames.triggerName(i)=="HLT_Photon30_L1R") {if (PhotonThresh<0 || PhotonThresh>30) PhotonThresh=30;}
+                    else if (trigNames.triggerName(i)=="HLT_Photon30_L1R_8E29") {if (PhotonThresh<0 || PhotonThresh>30) PhotonThresh=30;}
+                    else if (trigNames.triggerName(i)=="HLT_Photon30_Cleaned_L1R"){if (PhotonThresh<0 || PhotonThresh>30) PhotonThresh=30;}
+                    else if (trigNames.triggerName(i)=="HLT_Photon25_Cleaned_L1R"){if (PhotonThresh<0 || PhotonThresh>25) PhotonThresh=25;}
+                    else if (trigNames.triggerName(i)=="HLT_Photon20_L1R") {if (PhotonThresh<0 || PhotonThresh>20) PhotonThresh=20;}
+                    else if (trigNames.triggerName(i)=="HLT_Photon20_Cleaned_L1R"){if (PhotonThresh<0 || PhotonThresh>20) PhotonThresh=20;}
+                    else if (trigNames.triggerName(i)=="HLT_Photon15_L1R") {if (PhotonThresh<0 || PhotonThresh>15) PhotonThresh=15;}
+                    else if (trigNames.triggerName(i)=="HLT_Photon15_LooseEcalIso_L1R") {if (PhotonThresh<0 || PhotonThresh>15) PhotonThresh=15;}
+                    else if (trigNames.triggerName(i)=="HLT_Photon15_LooseEcalIso_Cleaned_L1R") {if (PhotonThresh<0 || PhotonThresh>15) PhotonThresh=15;}
+                    else if (trigNames.triggerName(i)=="HLT_Photon15_TrackIso_L1R") {if (PhotonThresh<0 || PhotonThresh>15) PhotonThresh=15;}
+                    else if (trigNames.triggerName(i)=="HLT_Photon15_TrackIso_Cleaned__L1R") {if (PhotonThresh<0 || PhotonThresh>15) PhotonThresh=15;}
+                    else if (run<141956 && trigNames.triggerName(i)=="HLT_Photon15_Cleaned_L1R"){if (PhotonThresh<0 || PhotonThresh>15) PhotonThresh=15;}
+                    else if (trigNames.triggerName(i)=="HLT_Photon10_L1R") {if (PhotonThresh<0 || PhotonThresh>10) PhotonThresh=10;}
+                    else if (run<141956 && trigNames.triggerName(i)=="HLT_Photon10_Cleaned_L1R"){if (PhotonThresh<0 || PhotonThresh>10) PhotonThresh=10;}
 
                     // electron+MET triggers
                     else if (trigNames.triggerName(i)=="HLT_Ele10_MET45_v1") {if (ElectronThresh<-10) ElectronThresh=-10;}
 
                     // double electron triggers
+                    // 2010 A (including DoublePhoton)
+                    else if (trigNames.triggerName(i)=="HLT_DoubleEle10_SW_L1R"){if (DoubleElectronThresh<0 || DoubleElectronThresh>10) DoubleElectronThresh=10;}
+                    else if (trigNames.triggerName(i)=="HLT_DoubleEle5_SW_L1R"){if (DoubleElectronThresh<0 || DoubleElectronThresh>5) DoubleElectronThresh=5;}
+                    else if (trigNames.triggerName(i)=="HLT_DoubleEle4_SW_eeRes_L1R"){if (DoubleElectronThresh<0 || DoubleElectronThresh>4) DoubleElectronThresh=4;}
+                    else if (run<144200 && trigNames.triggerName(i)=="HLT_DoublePhoton20_L1R"){if (PhotonThresh<0 || PhotonThresh>20) PhotonThresh=20;}
+                    else if (run<144200 && trigNames.triggerName(i)=="HLT_DoublePhoton15_L1R"){if (PhotonThresh<0 || PhotonThresh>15) PhotonThresh=15;}
+                    else if (run<141956 && trigNames.triggerName(i)=="HLT_DoublePhoton10_L1R"){if (PhotonThresh<0 || PhotonThresh>10) PhotonThresh=10;}
+                    else if (run<141956 && trigNames.triggerName(i)=="HLT_DoublePhoton5_L1R"){if (PhotonThresh<0 || PhotonThresh>5) PhotonThresh=5;}
+                    else if (trigNames.triggerName(i)=="HLT_DoublePhoton4_Jpsi_L1R"){if (PhotonThresh<0 || PhotonThresh>4) PhotonThresh=4;}
+                    else if (trigNames.triggerName(i)=="HLT_DoublePhoton4_Upsilon_L1R"){if (PhotonThresh<0 || PhotonThresh>5) PhotonThresh=5;}
+                    else if (trigNames.triggerName(i)=="HLT_DoublePhoton4_eeRes_L1R"){if (PhotonThresh<0 || PhotonThresh>4) PhotonThresh=4;}
+                    else if (trigNames.triggerName(i)=="HLT_DoublePhoton5_CEP_L1R"){if (PhotonThresh<0 || PhotonThresh>5) PhotonThresh=5;}
+                    else if (trigNames.triggerName(i)=="HLT_DoublePhoton5_Jpsi_L1R"){if (PhotonThresh<0 || PhotonThresh>5) PhotonThresh=5;}
+                    else if (trigNames.triggerName(i)=="HLT_DoublePhoton5_Upsilon_L1R"){if (PhotonThresh<0 || PhotonThresh>5) PhotonThresh=5;}
+                    else if (trigNames.triggerName(i)=="HLT_DoublePhoton5_Upsilon_CEP"){if (PhotonThresh<0 || PhotonThresh>5) PhotonThresh=5;}
+
+                    // 2010 B
                     else if (trigNames.triggerName(i)=="HLT_Ele17_SW_TightCaloEleId_SC8HE_L1R_v1") {if (DoubleElectronThresh<0 || DoubleElectronThresh>8) DoubleElectronThresh=8;}
                     else if (trigNames.triggerName(i)=="HLT_Ele17_SW_TightCaloEleId_Ele8HE_L1R_v1") {if (DoubleElectronThresh<0 || DoubleElectronThresh>8) DoubleElectronThresh=8;}
                     else if (trigNames.triggerName(i)=="HLT_Ele17_SW_TightCaloEleId_Ele8HE_L1R_v2") {if (DoubleElectronThresh<0 || DoubleElectronThresh>8) DoubleElectronThresh=8;}
@@ -2124,18 +2175,28 @@ bool NanoAnalyzer::providesGoodETrigger(const edm::Event& iEvent) {
  
 
 
-                    // EGMonitor triggers Run B
+                    // EGMonitor triggers 2010 Run B
                     // should only occur exclusively when running over the EGMonitor sample, can occur non-exlusively on all samples
                     //          --  have all been checked for real occurrence in EGMonitor B sample :-)
                     bool EGMonitorTrigThis = true;
                     //
-                    // *** not yet complete ***
                     // ECAL activity triggers,
+                    // also Run A
                     if      (trigNames.triggerName(i)=="HLT_Activity_Ecal_SC17"){if (ElectronThresh<-17) ElectronThresh=-17;}
+                    else if (trigNames.triggerName(i)=="HLT_Activity_Ecal_SC15"){if (ElectronThresh<-7) ElectronThresh=-15;}
                     else if (trigNames.triggerName(i)=="HLT_Activity_Ecal_SC7"){if (ElectronThresh<-7) ElectronThresh=-7;}
+                    // next three also EGMonitor Run A
                     else if (trigNames.triggerName(i)=="HLT_L1SingleEG8"){if (ElectronThresh<-8) ElectronThresh=-8;}
                     else if (trigNames.triggerName(i)=="HLT_L1SingleEG5"){if (ElectronThresh<-5) ElectronThresh=-5;}
                     else if (trigNames.triggerName(i)=="HLT_L1SingleEG2"){if (ElectronThresh<-2) ElectronThresh=-2;}
+                    // from here Run A only
+                    else if (trigNames.triggerName(i)=="HLT_Ele15_SC10_LW_L1R"){if (ElectronThresh<0 || ElectronThresh>15) ElectronThresh=15;}
+                    else if (run>141955 && trigNames.triggerName(i)=="HLT_Ele15_LW_L1R"){if (ElectronThresh<0 || ElectronThresh>15) ElectronThresh=15;}
+                    else if (run>144000 && trigNames.triggerName(i)=="HLT_Ele15_SW_L1R"){if (ElectronThresh<0 || ElectronThresh>15) ElectronThresh=15;}
+                    else if (run>144000 && trigNames.triggerName(i)=="HLT_Ele10_SW_L1R"){if (ElectronThresh<0 || ElectronThresh>10) ElectronThresh=10;}
+                    else if (run>144000 && trigNames.triggerName(i)=="HLT_Ele10_SW_EleId_L1R"){if (ElectronThresh<0 || ElectronThresh>10) ElectronThresh=10;}
+                    else if (run>141955 && trigNames.triggerName(i)=="HLT_Ele15_SiStrip_L1R"){if (ElectronThresh<0 || ElectronThresh>15) ElectronThresh=15;}
+                    else if (trigNames.triggerName(i)=="HLT_Ele20_SiStrip_L1R"){if (ElectronThresh<0 || ElectronThresh>20) ElectronThresh=20;}
                     // Low pt or loose electron triggers
                     else if (trigNames.triggerName(i)=="HLT_Ele12_SW_TightEleId_L1R"){if (ElectronThresh<0 || ElectronThresh>12) ElectronThresh=12;}
                     else if (trigNames.triggerName(i)=="HLT_Ele12_SW_TighterEleId_L1R_v1"){if (ElectronThresh<0 || ElectronThresh>12) ElectronThresh=12;}
@@ -2146,9 +2207,10 @@ bool NanoAnalyzer::providesGoodETrigger(const edm::Event& iEvent) {
                     else if (trigNames.triggerName(i)=="HLT_Ele22_SW_L1R_v2"){if (ElectronThresh<0 || ElectronThresh>22) ElectronThresh=22;}
                     else if (trigNames.triggerName(i)=="HLT_Ele17_SW_L1R"){if (ElectronThresh<0 || ElectronThresh>17) ElectronThresh=17;}
                     else if (trigNames.triggerName(i)=="HLT_Ele17_SW_L1R_v2"){if (ElectronThresh<0 || ElectronThresh>17) ElectronThresh=17;}
-                    else if (trigNames.triggerName(i)=="HLT_Ele10_SW_L1R"){if (ElectronThresh<0 || ElectronThresh>10) ElectronThresh=10;}
+                    else if ((run<142000 || run>144114) && trigNames.triggerName(i)=="HLT_Ele10_SW_L1R"){if (ElectronThresh<0 || ElectronThresh>10) ElectronThresh=10;}
                     else if (trigNames.triggerName(i)=="HLT_Ele10_SW_L1R_v2"){if (ElectronThresh<0 || ElectronThresh>10) ElectronThresh=10;}
                     // low pt dielectron triggers
+                    // next also Run A
                     else if (trigNames.triggerName(i)=="HLT_L1DoubleEG5"){if (DoubleElectronThresh<0 || DoubleElectronThresh>5) DoubleElectronThresh=5;}
                     else if (trigNames.triggerName(i)=="HLT_DoubleEle5_SW_Upsilon_L1R_v1"){if (DoubleElectronThresh<-5) DoubleElectronThresh=-5;}
                     else if (trigNames.triggerName(i)=="HLT_DoubleEle5_SW_Upsilon_L1R_v2"){if (DoubleElectronThresh<-5) DoubleElectronThresh=-5;}
@@ -2158,11 +2220,17 @@ bool NanoAnalyzer::providesGoodETrigger(const edm::Event& iEvent) {
                     else if (trigNames.triggerName(i)=="HLT_Photon50_NoHE_L1R"){if (PhotonThresh<0 || PhotonThresh>50) PhotonThresh=50;}
                     else if (trigNames.triggerName(i)=="HLT_Photon20_NoHE_L1R"){if (PhotonThresh<0 || PhotonThresh>20) PhotonThresh=20;}
                     else if (trigNames.triggerName(i)=="HLT_Photon20_Isol_Cleaned_L1R_v1"){if (PhotonThresh<0 || PhotonThresh>20) PhotonThresh=20;}
-                    else if (trigNames.triggerName(i)=="HLT_Photon15_Cleaned_L1R"){if (PhotonThresh<0 || PhotonThresh>10) PhotonThresh=10;}
-                    else if (trigNames.triggerName(i)=="HLT_Photon10_Cleaned_L1R"){if (PhotonThresh<0 || PhotonThresh>10) PhotonThresh=10;}
-                    else if (trigNames.triggerName(i)=="HLT_DoublePhoton15_L1R"){if (PhotonThresh<0 || PhotonThresh>15) PhotonThresh=15;}
-                    else if (trigNames.triggerName(i)=="HLT_DoublePhoton10_L1R"){if (PhotonThresh<0 || PhotonThresh>10) PhotonThresh=10;}
-                    else if (trigNames.triggerName(i)=="HLT_DoublePhoton5_L1R"){if (PhotonThresh<0 || PhotonThresh>5) PhotonThresh=5;}
+                    // next two also Run A
+                    else if (run>141955 && trigNames.triggerName(i)=="HLT_Photon15_Cleaned_L1R"){if (PhotonThresh<0 || PhotonThresh>15) PhotonThresh=15;}
+                    else if (run>141955 && trigNames.triggerName(i)=="HLT_Photon10_Cleaned_L1R"){if (PhotonThresh<0 || PhotonThresh>10) PhotonThresh=10;}
+                    else if (run>144200 && trigNames.triggerName(i)=="HLT_DoublePhoton15_L1R"){if (PhotonThresh<0 || PhotonThresh>15) PhotonThresh=15;}
+                    // also Run A 
+                    else if (run>141955 && trigNames.triggerName(i)=="HLT_DoublePhoton10_L1R"){if (PhotonThresh<0 || PhotonThresh>10) PhotonThresh=10;}
+                    else if (run>141955 && trigNames.triggerName(i)=="HLT_DoublePhoton5_L1R"){if (PhotonThresh<0 || PhotonThresh>5) PhotonThresh=5;}
+                    // technical triggers Run A  
+                    else if (trigNames.triggerName(i)=="HLT_SelectEcalSpikes_L1R"){if (PhotonThresh<-48) PhotonThresh=-48;}
+                    else if (trigNames.triggerName(i)=="HLT_SelectEcalSpikesHighEt_L1R"){if (PhotonThresh<-47) PhotonThresh=-47;}
+
                     else EGMonitorTrigThis = false;  // none of the above fired
 
                     // check and set whether trigger for EGMonitor dataset has fired
