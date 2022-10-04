@@ -1,13 +1,15 @@
 import os, subprocess, sys
 import datetime
 
+input_file = 'jpsi_ccbar_3FS_4FS_SPS_2017_13TeV.txt'
+
 today = datetime.date.today()
 
-njobs = 1 # Change for the wanted number of jobs
-template = "crab_config_NANO_MC"
+njobs = 6966 # Change for the wanted number of jobs
+template = "crab_config_nano_MC"
 
 for path in subprocess.check_output("ls paths_monte_carlo/", shell=True).decode("utf-8").splitlines():
-    if not (path.endswith(".txt")):
+    if not (path.endswith(input_file)):
         continue
     dataset = path[0: path.find(".")]
     with open(template + ".py", 'r') as f:
