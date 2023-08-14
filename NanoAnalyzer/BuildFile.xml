@@ -9,6 +9,7 @@
 <use name="RecoMuon/TrackingTools"/>
 <use name="RecoEgamma/EgammaTools"/>
 <use name="DataFormats/JetReco"/>
+<use name="JetMETCorrections/Objects"/>
 <use name="TrackingTools/TransientTrack"/>
 <use name="TrackingTools/Records"/>
 <use name="RecoVertex/AdaptiveVertexFit"/>
@@ -16,6 +17,4 @@
 <use name="RecoVertex/PrimaryVertexProducer"/>
 <use name="RecoVertex/VertexPrimitives"/>
 <use name="RecoVertex/TrimmedKalmanVertexFinder"/>
-<lib name="DAFVertexFinder"/>
-<lib name="VertexFitter"/>
 <flags EDM_PLUGIN="1"/>

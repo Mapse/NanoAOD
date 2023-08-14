@@ -25,24 +25,34 @@ process.load('Configuration.StandardSequences.EndOfProcess_cff')
 ############################################################ To edit ############################################################
 #################################################################################################################################
 
-#global_tag = '106X_dataRun2_v32' #2016
-global_tag = '106X_mc2017_realistic_v8' # 2017
+global_tag = '106X_mc2017_realistic_v8' # 2017 ???
 #global_tag = '106X_upgrade2018_realistic_v15_L1v1' #2018
-#global_tag = '106X_mc2017_realistic_v8'
+#global_tag = '106X_dataRun2_v32' #2016
 
 #### JSON
 good_JSON = '/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions17/13TeV/Legacy_2017/Cert_294927-306462_13TeV_UL2017_Collisions17_GoldenJSON.txt'
 
 # 2016: '/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions16/13TeV/Legacy_2016/Cert_271036-284044_13TeV_Legacy2016_Collisions16_JSON.txt'
-# 2017: '/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions18/13TeV/Legacy_2018/Cert_314472-325175_13TeV_Legacy2018_Collisions18_JSON.txt'
+# 2017: '/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions17/13TeV/Legacy_2017/Cert_294927-306462_13TeV_UL2017_Collisions17_GoldenJSON.txt'
 # 2018: '/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions18/13TeV/Legacy_2018/Cert_314472-325175_13TeV_Legacy2018_Collisions18_JSON.txt'
 
+## Input file
+in_file_1 = 'file:///afs/cern.ch/work/m/mabarros/public/MonteCarlo/SPS/CMSSW_10_6_20_patch1/src/test_SPS_13TeV_AOD.root'
+#in_file_2 = 'file:///afs/cern.ch/work/m/mabarros/public/MonteCarlo/SPS/CMSSW_10_6_20_patch1/src/test_SPS_13TeV_AOD_2.root'
+#in_file_3 = 'file:///afs/cern.ch/work/m/mabarros/public/MonteCarlo/SPS/CMSSW_10_6_20_patch1/src/test_SPS_13TeV_AOD_3.root'
+#in_file_4 = 'file:///afs/cern.ch/work/m/mabarros/public/MonteCarlo/SPS/CMSSW_10_6_20_patch1/src/test_SPS_13TeV_AOD_4.root'
+#in_file_5 = 'file:///afs/cern.ch/work/m/mabarros/public/MonteCarlo/SPS/CMSSW_10_6_20_patch1/src/test_SPS_13TeV_AOD_5.root'
+#in_file_6 = 'file:///afs/cern.ch/work/m/mabarros/public/MonteCarlo/SPS/CMSSW_10_6_20_patch1/src/test_SPS_13TeV_AOD_6.root'
+#in_file_7 = 'file:///afs/cern.ch/work/m/mabarros/public/MonteCarlo/SPS/CMSSW_10_6_20_patch1/src/test_SPS_13TeV_AOD_7.root'
+#in_file_8 = 'file:///afs/cern.ch/work/m/mabarros/public/MonteCarlo/SPS/CMSSW_10_6_20_patch1/src/test_SPS_13TeV_AOD_8.root'
+#in_file_9 = 'file:///afs/cern.ch/work/m/mabarros/public/MonteCarlo/SPS/CMSSW_10_6_20_patch1/src/test_SPS_13TeV_AOD_9.root'
+#in_file_10 = 'file:///afs/cern.ch/work/m/mabarros/public/MonteCarlo/SPS/CMSSW_10_6_20_patch1/src/test_SPS_13TeV_AOD_10.root'
+
 ## Output file
-#out_file = 'test_SPS_13TeV_NanoAODPlus.root'
-out_file = 'sps_13TeV_NanoAODPlus.root'
+out_file = 'Jpsi_Dstar_color_singlet_SPS_2017_13TeV_NanoAODPlus.root'
 
 #################################################################################################################################
-############################################################ End editing ############################################################
+#################################################################################################################################
 #################################################################################################################################
 
 ###################################### GLOBAL TAG ################################
@@ -84,19 +94,9 @@ goodJSON = good_JSON
 #)
 
 # To submit batch job using CRAB or test locally (2nd option), use this:
-process.source = cms.Source("PoolSource",
-                            fileNames = cms.untracked.vstring(
-# MC AODSIM
-        #  'file://JpsiToMuMuwithDZero_13TeV_RECO.root',)
-# MC MiniAOD
-#           'file://JpsiToMuMuwithDZero_13TeV_MiniAOD.root',)
-# Chamonium UL AOD
-          #'/store/data/Run2018B/Charmonium/AOD/12Nov2019_UL2018-v1/100000/00C09940-4299-2642-8874-EE3B38991E20.root',)
-# Chamonium UL miniAOD
-#          '/store/data/Run2017E/Charmonium/MINIAOD/09Aug2019_UL2017-v1/60000/6CFDC26E-8628-6446-890E-AC0F2E3A330D.root',)
-#                            fileNames = cms.untracked.vstring('')
-))
+#process.source = cms.Source("PoolSource", fileNames = cms.untracked.vstring(in_file_1, in_file_2, in_file_3, in_file_4, in_file_6, in_file_7, in_file_8, in_file_9, in_file_10))
 
+process.source = cms.Source("PoolSource", fileNames = cms.untracked.vstring(in_file_1))
 ##################################################################################
 
 # Process the lumi
@@ -143,5 +143,5 @@ process.nano = cms.EDAnalyzer('NanoAnalyzer',
                               # If Data:
                               #isData = cms.bool(True)
 )
-process.p = cms.Path(process.nano)
 
+process.p = cms.Path(process.nano)

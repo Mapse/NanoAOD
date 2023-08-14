@@ -1,0 +1,8 @@
+crab kill CharmoniumRun2018UL/crab_CharmoniumRun2018A_12Nov2019_UL2018_rsb-v1_AOD
+rm -rf CharmoniumRun2018UL/crab_CharmoniumRun2018A_12Nov2019_UL2018_rsb-v1_AOD
+
+crab kill CharmoniumRun2018UL/crab_CharmoniumRun2018B_12Nov2019_UL2018-v1_AOD
+rm -rf CharmoniumRun2018UL/crab_CharmoniumRun2018B_12Nov2019_UL2018-v1_AOD
+
+crab kill CharmoniumRun2018UL/crab_CharmoniumRun2018D_12Nov2019_UL2018-v1_AOD
+rm -rf CharmoniumRun2018UL/crab_CharmoniumRun2018D_12Nov2019_UL2018-v1_AOD

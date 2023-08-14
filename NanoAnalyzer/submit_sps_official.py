@@ -4,14 +4,17 @@ import datetime
 ################### To edit #####################
 
 # File with the dataset paths
-das_path = 'charmonium_dataset_2016.txt'
+#das_path = 'sps_official_2016_prevfp.txt'
+#das_path = 'sps_official_2016.txt'
+#das_path = 'sps_official_2017.txt'
+das_path = 'sps_official_2018.txt'
 
 ################### End editing #####################
 
 # Crab template name
 crab_template = "crab_config"
 # Step
-config_template = "nanoanalyzer"
+config_template = "nanoanalyzer_mc_official"
 
 # Read the file and put the paths on a list
 with open(das_path) as f:
@@ -32,7 +35,8 @@ for dataset in datasets:
     # Stores directory name. Ex: 'data18UL'
     OUT_DIR = "Data" + ERA[-3:-1] + "UL"
     # Stores request name. Ex : 'CharmoniumRun2018A_Run2018A-12Nov2019_UL2018_rsb-v1_AOD'
-    REQUEST_NAME = PRIM_DATASET + ERA + "_" + splited[2][9:] + "_" + splited[-1]
+    #REQUEST_NAME = PRIM_DATASET + ERA + "_" + splited[2][9:] + "_" + splited[-1]
+    REQUEST_NAME = PRIM_DATASET + ERA 
 
     with open(crab_template + ".py", 'r') as f:
         new_file = f.read().replace("WORKAREA", WORKAREA)
