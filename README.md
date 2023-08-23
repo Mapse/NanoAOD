@@ -69,9 +69,9 @@ Now, you can edit the files:
 
 * Then, to call CRAB, do the following:
 
-* ```
+```
 python submit_nano_monte_carlo.py
-  ```
+```
 
 
 
