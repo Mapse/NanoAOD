@@ -1,3 +1,0 @@
-
-
-crab status CharmoniumRun2016UL/crab_CharmoniumRun2016F_21Feb2020_UL2016_HIPM-v1_AOD

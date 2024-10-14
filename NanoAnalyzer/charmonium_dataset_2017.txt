@@ -1,4 +1,0 @@
-/Charmonium/Run2017B-09Aug2019_UL2017-v1/AOD
-#/Charmonium/Run2017C-09Aug2019_UL2017-v1/AOD
-#/Charmonium/Run2017D-09Aug2019_UL2017-v1/AOD
-#/Charmonium/Run2017E-09Aug2019_UL2017-v1/AOD
