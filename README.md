@@ -1,6 +1,39 @@
 # NanoAODPlus
 This repository contains the codes for conversion from AOD or miniAOD to nanoAOD.
 
+## Running official DPS/SPS
+
+The first thing to do is to organize the text files containing the paths to the AOD datasets on Data Aggregation Service (DAS). The files are orgnized as:
+
+### DPS-c\overline{c}
+
+* **dps_ccbar_official_2016_prevfp.txt**
+* **dps_ccbar_official_2016.txt**
+* **dps_ccbar_official_2017.txt**
+* **dps_ccbar_official_2018.txt**
+
+### DPS-b\overline{b}
+
+* **dps_bbbar_official_2016_prevfp.txt**
+* **dps_bbbar_official_2016.txt**
+* **dps_bbbar_official_2017.txt**
+* **dps_bbbar_official_2018.txt**
+
+### SPS-c\overline{c}
+
+* **sps_ccbar_official_2016_prevfp.txt**
+* **sps_ccbar_official_2016.txt**
+* **sps_ccbar_official_2017.txt**
+* **sps_ccbar_official_2018.txt**
+
+### SPS-b\overline{b}
+
+* **sps_bbbar_official_2016_prevfp.txt**
+* **sps_bbbar_official_2016.txt**
+* **sps_bbbar_official_2017.txt**
+* **sps_bbbar_official_2018.txt**
+
+
 ## Running Private SPS
 
 If you want to run a private sample you can perform the steps LHE -> ROOT (hadronization) -> GEN-SIM -> DIGI2RAW -> HLT -> AOD on this repository https://github.com/Mapse/SPS_MC/tree/main
