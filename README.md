@@ -5,35 +5,50 @@ This repository contains the codes for conversion from AOD or miniAOD to nanoAOD
 
 The first thing to do is to organize the text files containing the paths to the AOD datasets on Data Aggregation Service (DAS). The files are orgnized as:
 
-### DPS-c\overline{c}
+### $DPS-c\overline{c}$
 
 * **dps_ccbar_official_2016_prevfp.txt**
 * **dps_ccbar_official_2016.txt**
 * **dps_ccbar_official_2017.txt**
 * **dps_ccbar_official_2018.txt**
 
-### DPS-b\overline{b}
+### $DPS-b\overline{b}$
 
 * **dps_bbbar_official_2016_prevfp.txt**
 * **dps_bbbar_official_2016.txt**
 * **dps_bbbar_official_2017.txt**
 * **dps_bbbar_official_2018.txt**
 
-### SPS-c\overline{c}
+### $SPS-c\overline{c}$
 
 * **sps_ccbar_official_2016_prevfp.txt**
 * **sps_ccbar_official_2016.txt**
 * **sps_ccbar_official_2017.txt**
 * **sps_ccbar_official_2018.txt**
 
-### SPS-b\overline{b}
+### $SPS-b\overline{b}$
 
 * **sps_bbbar_official_2016_prevfp.txt**
 * **sps_bbbar_official_2016.txt**
 * **sps_bbbar_official_2017.txt**
 * **sps_bbbar_official_2018.txt**
 
+For instance, the path for $DPS-b\overline{b}$ for $p_T$ 50-100 GeV/c is:
 
+```
+/D0ToKPi_Jpsi50to100_HardQCD_TuneCP5_13TeV-pythia8-evtgen/RunIISummer20UL17RECO-106X_mc2017_realistic_v6-v1/AODSIM
+```
+After this step, you must modify three files before submitting your request:
+
+* **crab_config.py**: edit lines 6 and 7.
+* **nanoanalyzer_mc_official.py**: choose the correct global_tag and good_JSON. 
+* **submit_mc_official.py**: edit input_file with the wanted .txt file.
+
+Then, to call CRAB, do the following:
+
+```
+python submit_mc_official.py
+```
 ## Running Private SPS
 
 If you want to run a private sample you can perform the steps LHE -> ROOT (hadronization) -> GEN-SIM -> DIGI2RAW -> HLT -> AOD on this repository https://github.com/Mapse/SPS_MC/tree/main
@@ -97,7 +112,7 @@ Then, you do the following:
 Now, you can edit the files:
 
 * **crab_config_nano_MC.py**: edit lines 7-11.
-* **nanoanalyzer_mc.py**: choose the correct global_tal, good_JSON and out_file must be the same as out_file in crab_config_nano_MC-py 
+* **nanoanalyzer_mc.py**: choose the correct global_tag, good_JSON and out_file must be the same as out_file in crab_config_nano_MC-py 
 * **submit_nano_monte_carlo.py**: edit input_file with the name you choose on get_files_xrootd.py and put the number of jobs.
 
 * Then, to call CRAB, do the following:

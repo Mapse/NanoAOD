@@ -5,12 +5,10 @@ import datetime
 
 # File with the dataset paths
 #das_path = 'dps_official_2016.txt'
-das_path = 'dps_official_2017.txt'
+das_path = 'dps_bbbar_official_2017.txt'
 #das_path = 'dps_official_2016_prevfp.txt'
 #das_path = 'dps_official_2018.txt'
-#das_path = 'bctobspi_jpsiphipi_dataset.txt'
-#das_path = 'bctojpsibc_dataset.txt'
-#das_path = 'bctojpsimumu_dataset.txt'  #Done
+
 ################### End editing #####################
 
 # Crab template name

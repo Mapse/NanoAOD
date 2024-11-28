@@ -26,8 +26,8 @@ process.load('Configuration.StandardSequences.EndOfProcess_cff')
 #################################################################################################################################
 
 #### Global tag
-global_tag = '106X_dataRun2_v32' #2016
-#global_tag = '106X_mc2017_realistic_v8' # 2017
+#global_tag = '106X_dataRun2_v32' #2016
+global_tag = '106X_mc2017_realistic_v8' # 2017
 #global_tag = '106X_upgrade2018_realistic_v15_L1v1' #2018
 
 #### JSON
