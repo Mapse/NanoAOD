@@ -64,7 +64,7 @@ First, you need to get the .txt files with the paths to the AOD files. Go to /Na
 The first thing to do here is to identify what is the path of your files. Using T2_Caltec_US as an example, the command is,
 
 ```
-xrdfs xrootd-redir.ultralight.org ls -l path_to_files
+xrdfs k8s-redir.ultralight.org:1094 ls -l path_to_files
 ```
 The <i>path_to_files</i> is the path where the files were produced. To identify it you refer to the variable **out_dir_base** on **crab_config_LHE.py** file (line 7). In this example, it is like this:
 
